@@ -1,6 +1,7 @@
 package sophia
 
 import (
+	"C"
 	"errors"
 	"fmt"
 	"unsafe"
@@ -8,44 +9,64 @@ import (
 
 // Environment is used to configure the database before opening.
 type Environment struct {
-	ptr *unsafe.Pointer
+	ptr unsafe.Pointer
 }
 
 // NewEnvironment creates a new environment for opening a database.
 // Receivers must call Close() on the returned Environment.
 func NewEnvironment() (*Environment, error) {
-	env := &Environment{}
-	env.ptr = sp_env()
-	if nil == env {
+	ptr := sp_env()
+	if ptr == nil {
 		return nil, errors.New("sp_env failed")
 	}
-	return env, nil
+	return &Environment{ptr: ptr}, nil
 }
 
-func (env *Environment) GetObject(path string) *unsafe.Pointer {
+func (env *Environment) GetObject(path string) unsafe.Pointer {
 	return sp_getobject(env.ptr, path)
 }
 
-func (env *Environment) SetString(path, val string, size int) bool {
-	return sp_setstring(env.ptr, path, val, size)
+func (env *Environment) SetString(path, val string) bool {
+	cPath := C.CString(path)
+	cVal := C.CString(val)
+	return sp_setstring_s(env.ptr, cPath, cVal, len(val))
 }
 
-func (env *Environment) GetString(path string, size int) string {
+func (env *Environment) SetInt(path string, val int64) bool {
+	return sp_setint(env.ptr, path, val)
+}
+
+func (env *Environment) Get(path string, size *int) interface{} {
 	return sp_getstring(env.ptr, path, size)
 }
 
-func (env *Environment) NewDatabase(name string) (*Database, error) {
-	if !env.SetString("db", name, 0) {
+func (env *Environment) GetString(path string, size *int) string {
+	return GoString(sp_getstring(env.ptr, path, size))
+}
+
+func (env *Environment) NewDatabase(name string, schema *Schema) (*Database, error) {
+	if !env.SetString("db", name) {
 		return nil, errors.New("failed create database")
+	}
+	i := 0
+	for n, typ := range schema.keys {
+		env.SetString(fmt.Sprintf("db.%v.scheme", name), n)
+		env.SetString(fmt.Sprintf("db.%v.scheme.%v", name, n), fmt.Sprintf("%v,key(%v)", typ, i))
+		i++
+	}
+	for n, typ := range schema.values {
+		env.SetString(fmt.Sprintf("db.%v.scheme", name), n)
+		env.SetString(fmt.Sprintf("db.%v.scheme.%v", name, n), typ)
 	}
 	db := env.GetObject(fmt.Sprintf("db.%v", name))
 	if db == nil {
-		return nil, errors.New("failed create database")
+		return nil, errors.New("failed get database")
 	}
 	return &Database{
-		env:  env,
-		ptr:  db,
-		name: name,
+		env:    env,
+		ptr:    db,
+		name:   name,
+		schema: schema,
 	}, nil
 }
 
@@ -59,4 +80,15 @@ func (env *Environment) Close() error {
 // At a minimum path must be specified and one db declared
 func (env *Environment) Open() bool {
 	return sp_open(env.ptr)
+}
+
+func (env *Environment) Error() error {
+	var error_size int
+	err := sp_getstring(env.ptr, "sophia.error", &error_size)
+	if err != nil {
+		str := GoString(err)
+		free(err)
+		return errors.New(str)
+	}
+	return nil
 }

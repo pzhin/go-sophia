@@ -6,31 +6,30 @@ import (
 	"unsafe"
 )
 
+type Order string
+
 const (
-	GreaterThan      = ">"
-	GT               = GreaterThan
-	GreaterThanEqual = ">="
-	GTE              = GreaterThanEqual
-	LessThan         = "<"
-	LT               = LessThan
-	LessThanEqual    = "<="
-	LTE              = LessThanEqual
+	GreaterThan      Order = ">"
+	GT               Order = GreaterThan
+	GreaterThanEqual Order = ">="
+	GTE              Order = GreaterThanEqual
+	LessThan         Order = "<"
+	LT               Order = LessThan
+	LessThanEqual    Order = "<="
+	LTE              Order = LessThanEqual
 )
 
 // Database is used for accessing a database.
 type Database struct {
-	ptr  *unsafe.Pointer
-	name string
-	env  *Environment
+	ptr    unsafe.Pointer
+	env    *Environment
+	name   string
+	schema *Schema
 }
 
 // Close closes the database and frees its associated memory. You must
 // call Close on any database opened with Open()
 func (db *Database) Close() error {
-	err := sp_close(db.ptr)
-	if nil != err {
-		return err
-	}
 	if nil != db.env {
 		return db.env.Close()
 	}
@@ -49,62 +48,35 @@ func (db *Database) Document() (doc *Document) {
 }
 
 // Get retrieves the value for the key.
-func (db *Database) Get(key []byte) ([]byte, error) {
-	var size int64
-	doc := db.Document()
-	if nil == doc {
-		return nil, errors.New("failed get document")
-	}
-	defer sp_close(doc.ptr)
-	doc.SetString("key", string(key), len(key))
+// TODO :: add destroy func to Document, it must be destroyed after usage
+func (db *Database) Get(doc *Document) (*Document, error) {
 	vptr := sp_get(db.ptr, doc.ptr)
 	if vptr == nil {
-		return nil, fmt.Errorf("failed Get: key=%q ", key)
+		return nil, errors.New("failed Get document")
 	}
-	value := goBytes(vptr, size)
-	return value, nil
+	return NewDocument(vptr), nil
 }
 
 // Set sets the value of the key.
-func (db *Database) Set(key, value []byte) error {
-	doc := db.Document()
-	if nil == doc {
-		return errors.New("failed get document")
-	}
-	defer sp_close(doc.ptr)
-	doc.SetString("key", string(key), len(key))
-	doc.SetString("value", string(value), len(value))
+func (db *Database) Set(doc *Document) error {
 	if !sp_set(db.ptr, doc.ptr) {
-		return fmt.Errorf("failed Set: key=%q value=%q", key, value)
+		return errors.New("failed Set document")
 	}
 	return nil
 }
 
 // Set sets the value of the key.
-func (db *Database) Upsert(key, value []byte) error {
-	doc := db.Document()
-	if nil == doc {
-		return errors.New("failed get document")
-	}
-	defer sp_close(doc.ptr)
-	doc.SetString("key", string(key), len(key))
-	doc.SetString("value", string(value), len(value))
+func (db *Database) Upsert(doc *Document) error {
 	if !sp_upsert(db.ptr, doc.ptr) {
-		return fmt.Errorf("failed Upsert: key=%q value=%q", key, value)
+		return errors.New("failed Upsert document")
 	}
 	return nil
 }
 
 // Delete deletes the key from the database.
-func (db *Database) Delete(key []byte) error {
-	doc := db.Document()
-	if nil == doc {
-		return errors.New("failed get document")
-	}
-	defer sp_close(doc.ptr)
-	doc.SetString("key", string(key), len(key))
+func (db *Database) Delete(doc *Document) error {
 	if !sp_delete(db.ptr, doc.ptr) {
-		return fmt.Errorf("failed Delete: key=%q", key)
+		return errors.New("failed Delete document")
 	}
 	return nil
 }
@@ -126,13 +98,46 @@ func (db *Database) Cursor(criteria CursorCriteria) (*Cursor, error) {
 	if nil == doc {
 		return nil, errors.New("failed get document")
 	}
-	err := criteria.apply(doc)
-	if err != nil {
-		return nil, err
-	}
 	cur := &Cursor{
 		ptr: cPtr,
 		doc: doc,
 	}
+	err := criteria.(*cursorCriteria).apply(cur)
+	if err != nil {
+		return nil, err
+	}
 	return cur, nil
+}
+
+type Schema struct {
+	// name -> type
+	keys      map[string]string
+	keysNames []string
+	// name -> type
+	values      map[string]string
+	valuesNames []string
+}
+
+func (s *Schema) AddKey(name, typ string) error {
+	if s.keys == nil {
+		s.keys = make(map[string]string)
+	}
+	if _, ok := s.keys[name]; ok {
+		return fmt.Errorf("dublicate key, '%v' has been already defined", name)
+	}
+	s.keysNames = append(s.keysNames, name)
+	s.keys[name] = typ
+	return nil
+}
+
+func (s *Schema) AddValue(name, typ string) error {
+	if s.values == nil {
+		s.values = make(map[string]string)
+	}
+	if _, ok := s.values[name]; ok {
+		return fmt.Errorf("dublicate value, '%v' is already defined", name)
+	}
+	s.valuesNames = append(s.valuesNames, name)
+	s.values[name] = typ
+	return nil
 }
