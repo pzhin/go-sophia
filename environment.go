@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"unsafe"
+	"reflect"
 )
 
 // Environment is used to configure the database before opening.
@@ -41,7 +42,12 @@ func (env *Environment) Get(path string, size *int) interface{} {
 }
 
 func (env *Environment) GetString(path string, size *int) string {
-	return GoString(sp_getstring(env.ptr, path, size))
+	ptr := sp_getstring(env.ptr, path, size)
+	sh := &reflect.StringHeader{
+		Len:  *size,
+		Data: uintptr(ptr),
+	}
+	return *(*string)(unsafe.Pointer(sh))
 }
 
 func (env *Environment) NewDatabase(name string, schema *Schema) (*Database, error) {
@@ -50,15 +56,15 @@ func (env *Environment) NewDatabase(name string, schema *Schema) (*Database, err
 	}
 	i := 0
 	for n, typ := range schema.keys {
-		env.SetString(fmt.Sprintf("db.%v.scheme", name), n)
-		env.SetString(fmt.Sprintf("db.%v.scheme.%v", name, n), fmt.Sprintf("%v,key(%v)", typ, i))
+		env.SetString(fmt.Sprintf("db.%s.scheme", name), n)
+		env.SetString(fmt.Sprintf("db.%s.scheme.%s", name, n), fmt.Sprintf("%s,key(%d)", typ.String(), i))
 		i++
 	}
 	for n, typ := range schema.values {
-		env.SetString(fmt.Sprintf("db.%v.scheme", name), n)
-		env.SetString(fmt.Sprintf("db.%v.scheme.%v", name, n), typ)
+		env.SetString(fmt.Sprintf("db.%s.scheme", name), n)
+		env.SetString(fmt.Sprintf("db.%s.scheme.%s", name, n), typ.String())
 	}
-	db := env.GetObject(fmt.Sprintf("db.%v", name))
+	db := env.GetObject(fmt.Sprintf("db.%s", name))
 	if db == nil {
 		return nil, errors.New("failed get database")
 	}

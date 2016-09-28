@@ -3,57 +3,56 @@ package sophia
 import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"os"
 	"testing"
 )
 
 const (
-	KeyTemplate   = "ключ%v"
-	ValueTemplate = "значение%v"
+	KeyTemplate   = "key%v"
+	ValueTemplate = "value%v"
 
+	DBPath       = "sophia"
+	DBName       = "test"
 	RecordsCount = 10
 )
 
 // TODO :: close db
-func TestSophia(t *testing.T) {
-	if !t.Run("Set", testDatabase_Set) {
+func TestSophiaDatabaseCRUD(t *testing.T) {
+	defer os.RemoveAll(DBPath)
+	if !t.Run("Set", testSet) {
 		t.Fatal("Set operations are failed")
 	}
-	if !t.Run("Get", testDatabase_Get) {
-		t.Fatal("Set operations are failed")
+	if !t.Run("Get", testGet) {
+		t.Fatal("Get operations are failed")
 	}
-	if !t.Run("Cursor", testCursor_Next) {
+	if !t.Run("Get", testDelete) {
+		t.Fatal("Delete operations are failed")
+	}
+}
+
+func TestCursor(t *testing.T) {
+	if !t.Run("Cursor", testCursorMatch) {
 		t.Fatal("Cursor operations are failed")
 	}
 }
 
-func testDatabase_Set(t *testing.T) {
-	dbPath := "test"
-	dbName := "sophia"
+func testSet(t *testing.T) {
 	env, err := NewEnvironment()
-	if !assert.Nil(t, err) {
-		t.Fatalf("failed create environment: err=%v", err)
-	}
-	if !assert.NotNil(t, env) {
-		t.Fatal("failed create environment")
-	}
+	require.Nil(t, err)
+	require.NotNil(t, env)
+	defer env.Close()
 
-	env.SetString("sophia.path", dbPath)
+	env.SetString("sophia.path", DBPath)
 
 	schema := &Schema{}
 	schema.AddKey("key", FieldType_String)
 	schema.AddValue("value", FieldType_String)
 
-	db, err := env.NewDatabase(dbName, schema)
-	if !assert.Nil(t, err) {
-		t.Fatalf("failed create Database: err=%v", err)
-	}
-	if !assert.NotNil(t, db) {
-		t.Fatal("failed create Database")
-	}
-
-	if !env.Open() {
-		t.Fatal("failed open environment")
-	}
+	db, err := env.NewDatabase(DBName, schema)
+	require.Nil(t, err)
+	require.NotNil(t, db)
+	require.True(t, env.Open())
 
 	for i := 0; i < RecordsCount; i++ {
 		doc := db.Document()
@@ -68,114 +67,106 @@ func testDatabase_Set(t *testing.T) {
 	}
 }
 
-func testDatabase_Get(t *testing.T) {
-	dbPath := "test"
-	dbName := "sophia"
+func testGet(t *testing.T) {
 	env, err := NewEnvironment()
-	if !assert.Nil(t, err) {
-		t.Fatalf("failed create environment: err=%v", err)
-	}
-	if !assert.NotNil(t, env) {
-		t.Fatal("failed create environment")
-	}
+	require.Nil(t, err)
+	require.NotNil(t, env)
+	defer env.Close()
 
-	env.SetString("sophia.path", dbPath)
+	env.SetString("sophia.path", DBPath)
 
 	schema := &Schema{}
 	schema.AddKey("key", FieldType_String)
 	schema.AddValue("value", FieldType_String)
 
-	db, err := env.NewDatabase(dbName, schema)
-	if !assert.Nil(t, err) {
-		t.Fatalf("failed create Database: err=%v", err)
-	}
-	if !assert.NotNil(t, db) {
-		t.Fatal("failed create Database")
-	}
-
-	if !env.Open() {
-		t.Fatal("failed open environment")
-	}
+	db, err := env.NewDatabase(DBName, schema)
+	require.Nil(t, err)
+	require.NotNil(t, db)
+	require.True(t, env.Open())
 
 	for i := 0; i < RecordsCount; i++ {
 		doc := db.Document()
 		doc.SetString("key", fmt.Sprintf(KeyTemplate, i))
 		d, err := db.Get(doc)
-		if !assert.Nil(t, err) {
-			t.Fatalf("failed get: err=%v", err)
-		}
+		require.Nil(t, err)
 		var size int
-		if !assert.Equal(t, fmt.Sprintf(KeyTemplate, i), d.GetString("key", &size)) {
-			t.Fatalf("incorrect key: size=%v", size)
-		}
-		if !assert.Equal(t, fmt.Sprintf(ValueTemplate, i), d.GetString("value", &size)) {
-			t.Fatalf("incorrect value: size=%v", size)
-		}
+		require.Equal(t, fmt.Sprintf(KeyTemplate, i), d.GetString("key", &size))
+		require.Equal(t, fmt.Sprintf(ValueTemplate, i), d.GetString("value", &size))
 		doc.Free()
 		d.Destroy()
 		d.Free()
 	}
 }
 
-func testCursor_Next(t *testing.T) {
-	dbPath := "test"
-	dbName := "sophia"
+func testDelete(t *testing.T) {
 	env, err := NewEnvironment()
-	if !assert.Nil(t, err) {
-		t.Fatalf("failed create environment: err=%v", err)
-	}
-	if !assert.NotNil(t, env) {
-		t.Fatal("failed create environment")
-	}
+	require.Nil(t, err)
+	require.NotNil(t, env)
+	defer env.Close()
 
-	env.SetString("sophia.path", dbPath)
+	env.SetString("sophia.path", DBPath)
 
 	schema := &Schema{}
 	schema.AddKey("key", FieldType_String)
 	schema.AddValue("value", FieldType_String)
 
-	db, err := env.NewDatabase(dbName, schema)
-	if !assert.Nil(t, err) {
-		t.Fatalf("failed create Database: err=%v", err)
-	}
-	if !assert.NotNil(t, db) {
-		t.Fatal("failed create Database")
+	db, err := env.NewDatabase(DBName, schema)
+	require.Nil(t, err)
+	require.NotNil(t, db)
+	require.True(t, env.Open())
+
+	for i := 0; i < RecordsCount; i++ {
+		doc := db.Document()
+		doc.SetString("key", fmt.Sprintf(KeyTemplate, i))
+		err := db.Delete(doc)
+		require.Nil(t, err)
+		doc.Free()
 	}
 
-	if !env.Open() {
-		t.Fatal("failed open environment")
-	}
-
-	cr := NewCursorCriteria()
-	count := 4
-	cr.Order(GTE)
-	cr.Add(CriteriaRange, "key", []string{fmt.Sprintf(KeyTemplate, 3), fmt.Sprintf(KeyTemplate, 8)})
-	cursor, err := db.Cursor(cr)
-	if !assert.Nil(t, err) {
-		t.Fatalf("failed create cursor: err=%v", err)
-	}
-	if !assert.NotNil(t, env) {
-		t.Fatal("failed create cursor")
-	}
-	defer cursor.Close()
-	var size int
-	for d := cursor.Next(); d != nil; d = cursor.Next() {
-		if !assert.Equal(t, fmt.Sprintf(KeyTemplate, count), d.GetString("key", &size)) {
-			t.Fatal("incorrect key")
-		}
-		if !assert.Equal(t, fmt.Sprintf(ValueTemplate, count), d.GetString("value", &size)) {
-			t.Fatal("incorrect value")
-		}
-		count++
-	}
-	if !assert.Equal(t, 8, count) {
-		t.Fatal("incorect records count")
+	for i := 0; i < RecordsCount; i++ {
+		doc := db.Document()
+		doc.SetString("key", fmt.Sprintf(KeyTemplate, i))
+		d, err := db.Get(doc)
+		require.Nil(t, d)
+		require.NotNil(t, err)
+		doc.Free()
 	}
 }
 
+func testCursorMatch(t *testing.T) {
+	env, err := NewEnvironment()
+	require.Nil(t, err)
+	require.NotNil(t, env)
+	defer env.Close()
+
+	env.SetString("sophia.path", DBPath)
+
+	schema := &Schema{}
+	schema.AddKey("key", FieldType_String)
+	schema.AddValue("value", FieldType_String)
+
+	db, err := env.NewDatabase(DBName, schema)
+	require.Nil(t, err)
+	require.NotNil(t, db)
+	require.True(t, env.Open())
+
+	cr := NewCursorCriteria()
+	count := RecordsCount / 2
+	cr.Add(CriteriaMatch, "key", count)
+	cursor, err := db.Cursor(cr)
+	require.Nil(t, err)
+	require.NotNil(t, env)
+	defer cursor.Close()
+	var size int
+	for d := cursor.Next(); d != nil; d = cursor.Next() {
+		require.Equal(t, fmt.Sprintf(KeyTemplate, count), d.GetString("key", &size))
+		require.Equal(t, fmt.Sprintf(ValueTemplate, count), d.GetString("value", &size))
+		count++
+	}
+	require.Equal(t, RecordsCount, count)
+}
+
 func BenchmarkDatabase_Set(b *testing.B) {
-	dbPath := "test"
-	dbName := "sophia"
 	env, err := NewEnvironment()
 	if !assert.Nil(b, err) {
 		b.Fatalf("failed create environment: err=%v", err)
@@ -184,13 +175,13 @@ func BenchmarkDatabase_Set(b *testing.B) {
 		b.Fatal("failed create environment")
 	}
 
-	env.SetString("sophia.path", dbPath)
+	env.SetString("sophia.path", DBPath)
 
 	schema := &Schema{}
 	schema.AddKey("key", FieldType_String)
 	schema.AddValue("value", FieldType_String)
 
-	db, err := env.NewDatabase(dbName, schema)
+	db, err := env.NewDatabase(DBName, schema)
 	if !assert.Nil(b, err) {
 		b.Fatalf("failed create Database: err=%v", err)
 	}

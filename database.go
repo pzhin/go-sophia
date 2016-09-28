@@ -1,7 +1,6 @@
 package sophia
 
 import (
-	"errors"
 	"fmt"
 	"unsafe"
 )
@@ -52,7 +51,7 @@ func (db *Database) Document() (doc *Document) {
 func (db *Database) Get(doc *Document) (*Document, error) {
 	vptr := sp_get(db.ptr, doc.ptr)
 	if vptr == nil {
-		return nil, errors.New("failed Get document")
+		return nil, fmt.Errorf("failed Get document: err=%v", db.env.Error())
 	}
 	return NewDocument(vptr), nil
 }
@@ -60,7 +59,7 @@ func (db *Database) Get(doc *Document) (*Document, error) {
 // Set sets the value of the key.
 func (db *Database) Set(doc *Document) error {
 	if !sp_set(db.ptr, doc.ptr) {
-		return errors.New("failed Set document")
+		return fmt.Errorf("failed Set document: err=%v", db.env.Error())
 	}
 	return nil
 }
@@ -68,7 +67,7 @@ func (db *Database) Set(doc *Document) error {
 // Set sets the value of the key.
 func (db *Database) Upsert(doc *Document) error {
 	if !sp_upsert(db.ptr, doc.ptr) {
-		return errors.New("failed Upsert document")
+		return fmt.Errorf("failed Upsert document: err=%v", db.env.Error())
 	}
 	return nil
 }
@@ -76,7 +75,7 @@ func (db *Database) Upsert(doc *Document) error {
 // Delete deletes the key from the database.
 func (db *Database) Delete(doc *Document) error {
 	if !sp_delete(db.ptr, doc.ptr) {
-		return errors.New("failed Delete document")
+		return fmt.Errorf("failed Delete document: err=%v", db.env.Error())
 	}
 	return nil
 }
@@ -92,11 +91,11 @@ func (db *Database) Delete(doc *Document) error {
 func (db *Database) Cursor(criteria CursorCriteria) (*Cursor, error) {
 	cPtr := sp_cursor(db.env.ptr)
 	if nil == cPtr {
-		return nil, errors.New("failed create cursor")
+		return nil, fmt.Errorf("failed create cursor: err=%v", db.env.Error())
 	}
 	doc := db.Document()
 	if nil == doc {
-		return nil, errors.New("failed get document")
+		return nil, fmt.Errorf("failed get document: err=%v", db.env.Error())
 	}
 	cur := &Cursor{
 		ptr: cPtr,
