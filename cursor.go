@@ -12,15 +12,15 @@ const (
 	cursorOrder  = "order"
 )
 
-type Type int
+type CriteriaType int
 
 const (
-	CriteriaMatch Type = iota
+	CriteriaMatch CriteriaType = iota
 	CriteriaRange
 )
 
 type criteria struct {
-	t     Type
+	t     CriteriaType
 	field string
 	value interface{}
 }
@@ -28,7 +28,7 @@ type criteria struct {
 type CursorCriteria interface {
 	Order(Order)
 	Prefix(string)
-	Add(Type, string, interface{})
+	Add(CriteriaType, string, interface{})
 }
 
 type cursorCriteria struct {
@@ -51,7 +51,7 @@ func (cc *cursorCriteria) Prefix(prefix string) {
 	cc.Add(CriteriaMatch, cursorPrefix, prefix)
 }
 
-func (cc *cursorCriteria) Add(typ Type, key string, value interface{}) {
+func (cc *cursorCriteria) Add(typ CriteriaType, key string, value interface{}) {
 	cc.crs[key] = &criteria{
 		t:     typ,
 		field: key,

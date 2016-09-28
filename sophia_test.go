@@ -40,8 +40,8 @@ func testDatabase_Set(t *testing.T) {
 	env.SetString("sophia.path", dbPath)
 
 	schema := &Schema{}
-	schema.AddKey("key", Key_String)
-	schema.AddValue("value", Key_String)
+	schema.AddKey("key", FieldType_String)
+	schema.AddValue("value", FieldType_String)
 
 	db, err := env.NewDatabase(dbName, schema)
 	if !assert.Nil(t, err) {
@@ -82,8 +82,8 @@ func testDatabase_Get(t *testing.T) {
 	env.SetString("sophia.path", dbPath)
 
 	schema := &Schema{}
-	schema.AddKey("key", Key_String)
-	schema.AddValue("value", Key_String)
+	schema.AddKey("key", FieldType_String)
+	schema.AddValue("value", FieldType_String)
 
 	db, err := env.NewDatabase(dbName, schema)
 	if !assert.Nil(t, err) {
@@ -131,8 +131,8 @@ func testCursor_Next(t *testing.T) {
 	env.SetString("sophia.path", dbPath)
 
 	schema := &Schema{}
-	schema.AddKey("key", Key_String)
-	schema.AddValue("value", Key_String)
+	schema.AddKey("key", FieldType_String)
+	schema.AddValue("value", FieldType_String)
 
 	db, err := env.NewDatabase(dbName, schema)
 	if !assert.Nil(t, err) {
@@ -187,8 +187,8 @@ func BenchmarkDatabase_Set(b *testing.B) {
 	env.SetString("sophia.path", dbPath)
 
 	schema := &Schema{}
-	schema.AddKey("key", Key_String)
-	schema.AddValue("value", Key_String)
+	schema.AddKey("key", FieldType_String)
+	schema.AddValue("value", FieldType_String)
 
 	db, err := env.NewDatabase(dbName, schema)
 	if !assert.Nil(b, err) {

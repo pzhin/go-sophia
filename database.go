@@ -111,16 +111,16 @@ func (db *Database) Cursor(criteria CursorCriteria) (*Cursor, error) {
 
 type Schema struct {
 	// name -> type
-	keys      map[string]string
+	keys      map[string]FieldType
 	keysNames []string
 	// name -> type
-	values      map[string]string
+	values      map[string]FieldType
 	valuesNames []string
 }
 
-func (s *Schema) AddKey(name, typ string) error {
+func (s *Schema) AddKey(name string, typ FieldType) error {
 	if s.keys == nil {
-		s.keys = make(map[string]string)
+		s.keys = make(map[string]FieldType)
 	}
 	if _, ok := s.keys[name]; ok {
 		return fmt.Errorf("dublicate key, '%v' has been already defined", name)
@@ -130,9 +130,9 @@ func (s *Schema) AddKey(name, typ string) error {
 	return nil
 }
 
-func (s *Schema) AddValue(name, typ string) error {
+func (s *Schema) AddValue(name string, typ FieldType) error {
 	if s.values == nil {
-		s.values = make(map[string]string)
+		s.values = make(map[string]FieldType)
 	}
 	if _, ok := s.values[name]; ok {
 		return fmt.Errorf("dublicate value, '%v' is already defined", name)

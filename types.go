@@ -1,14 +1,16 @@
 package sophia
 
+type FieldType string
+
 const (
-	Key_UInt8     = "u8"
-	Key_UInt16    = "u16"
-	Key_UInt32    = "u32"
-	Key_UInt64    = "u64"
-	Key_UInt8Rev  = "u8rev"
-	Key_UInt16Rev = "u16rev"
-	Key_UInt32Rev = "u32rev"
-	Key_UInt64Rev = "u64rev"
-	Key_Int64     = "i64"
-	Key_String    = "string"
+	FieldType_UInt8     FieldType = "u8"
+	FieldType_UInt16    FieldType = "u16"
+	FieldType_UInt32    FieldType = "u32"
+	FieldType_UInt64    FieldType = "u64"
+	FieldType_UInt8Rev  FieldType = "u8rev"
+	FieldType_UInt16Rev FieldType = "u16rev"
+	FieldType_UInt32Rev FieldType = "u32rev"
+	FieldType_UInt64Rev FieldType = "u64rev"
+	FieldType_Int64     FieldType = "i64"
+	FieldType_String    FieldType = "string"
 )
