@@ -14,6 +14,6 @@ Or
     CGO_LDFLAGS="-L/path/to/sophia" \
     	go get github.com/pnevezhin/go-sophia`
     	
-And then build your project with flag
+And then build your project with flag for static linking
 
 	--ldflags '-extldflags "-static"'
