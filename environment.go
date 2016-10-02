@@ -4,10 +4,11 @@ import (
 	"C"
 	"errors"
 	"fmt"
-	"unsafe"
 	"reflect"
+	"unsafe"
 )
 
+// TODO :: memory leak, SetString, GetString, SetInt GetInt
 // Environment is used to configure the database before opening.
 type Environment struct {
 	ptr unsafe.Pointer
@@ -27,6 +28,23 @@ func (env *Environment) GetObject(path string) unsafe.Pointer {
 	return sp_getobject(env.ptr, path)
 }
 
+// TODO :: implement another types
+func (env *Environment) Set(path string, val interface{}) bool {
+	v := reflect.ValueOf(val)
+	switch v.Kind() {
+	case reflect.String:
+		return env.SetString(path, v.String())
+	case reflect.Int, reflect.Int64, reflect.Int8, reflect.Int16, reflect.Int32:
+		return env.SetInt(path, v.Int())
+	case reflect.Uint, reflect.Uint64, reflect.Uint8, reflect.Uint16, reflect.Uint32:
+		return env.SetInt(path, int64(v.Uint()))
+	default:
+		cPath := C.CString(path)
+		size := int(reflect.TypeOf(val).Size())
+		return sp_setstring(env.ptr, cPath, (unsafe.Pointer)(reflect.ValueOf(val).Pointer()), size)
+	}
+}
+
 func (env *Environment) SetString(path, val string) bool {
 	cPath := C.CString(path)
 	cVal := C.CString(val)
@@ -34,7 +52,8 @@ func (env *Environment) SetString(path, val string) bool {
 }
 
 func (env *Environment) SetInt(path string, val int64) bool {
-	return sp_setint(env.ptr, path, val)
+	cPath := C.CString(path)
+	return sp_setint(env.ptr, cPath, val)
 }
 
 func (env *Environment) Get(path string, size *int) interface{} {
@@ -47,7 +66,10 @@ func (env *Environment) GetString(path string, size *int) string {
 		Len:  *size,
 		Data: uintptr(ptr),
 	}
-	return *(*string)(unsafe.Pointer(sh))
+	s := *(*string)(unsafe.Pointer(sh))
+	cs := make([]byte, *size)
+	copy(cs, s)
+	return string(cs)
 }
 
 func (env *Environment) NewDatabase(name string, schema *Schema) (*Database, error) {

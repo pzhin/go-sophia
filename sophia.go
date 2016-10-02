@@ -78,11 +78,8 @@ func GoString(ptr unsafe.Pointer) string {
 	return C.GoString(cStr)
 }
 
-func sp_setint(obj unsafe.Pointer, path string, val int64) bool {
-	cPath := C.CString(path)
-	cVal := C.int64_t(val)
-	e := C.sp_setint(obj, cPath, cVal)
-	return e == 0
+func sp_setint(obj unsafe.Pointer, path *C.char, val int64) bool {
+	return C.sp_setint(obj, path, C.int64_t(val)) == 0
 }
 
 func sp_getint(obj unsafe.Pointer, path string) int64 {

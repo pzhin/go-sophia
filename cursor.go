@@ -65,11 +65,11 @@ func (cc *cursorCriteria) apply(cur *Cursor) error {
 		switch val.Kind() {
 		case reflect.Int64, reflect.Int, reflect.Int32, reflect.Int16, reflect.Int8:
 			cur.doc.SetInt(key, val.Int())
-			cc.checks[cr.field] = generateIntCheck(cr)
+			cc.checks[cr.field] = generateCheckMatchInt(cr)
 		case reflect.String:
 			cur.doc.SetString(key, val.String())
 			if key != cursorOrder && key != cursorPrefix {
-				cc.checks[cr.field] = generateStringCheck(cr)
+				cc.checks[cr.field] = generateCheckMatchString(cr)
 			}
 		case reflect.Slice:
 			if val.Len() != 2 {
@@ -94,7 +94,7 @@ func (cc *cursorCriteria) check(doc *Document) bool {
 	return true
 }
 
-func generateIntCheck(cr *criteria) func(d *Document) bool {
+func generateCheckMatchInt(cr *criteria) func(d *Document) bool {
 	v := cr.value
 	i := reflect.ValueOf(v).Int()
 	return func(d *Document) bool {
@@ -102,7 +102,7 @@ func generateIntCheck(cr *criteria) func(d *Document) bool {
 	}
 }
 
-func generateStringCheck(cr *criteria) func(d *Document) bool {
+func generateCheckMatchString(cr *criteria) func(d *Document) bool {
 	v := cr.value
 	s := reflect.ValueOf(v).String()
 	return func(d *Document) bool {
@@ -120,14 +120,14 @@ func generateCheck(cr *criteria) func(d *Document) bool {
 		i0, i1 := val0.Int(), val1.Int()
 		return func(d *Document) bool {
 			sv := d.GetInt(cr.field)
-			return sv > i0 && sv < i1
+			return sv >= i0 && sv <= i1
 		}
 	case reflect.String:
 		s0, s1 := val0.String(), val1.String()
 		return func(d *Document) bool {
 			var size int
 			sv := d.GetString(cr.field, &size)
-			return sv > s0 && sv < s1
+			return sv >= s0 && sv <= s1
 		}
 	default:
 		return func(d *Document) bool { return false }
@@ -156,8 +156,9 @@ func (cur *Cursor) Next() *Document {
 	if ptr == nil {
 		return nil
 	}
+	cur.doc.Free()
 	d := NewDocument(ptr)
-	cur.doc.ptr = ptr
+	cur.doc = d
 	if !cur.check(d) {
 		return cur.Next()
 	}

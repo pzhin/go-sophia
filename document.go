@@ -17,6 +17,7 @@ func NewDocument(ptr unsafe.Pointer) *Document {
 	}
 }
 
+// TODO :: implement another types
 func (d *Document) Set(path string, val interface{}) bool {
 	v := reflect.ValueOf(val)
 	switch v.Kind() {
@@ -38,11 +39,13 @@ func (d *Document) SetString(path string, value string) bool {
 	sh := (*reflect.StringHeader)(unsafe.Pointer(&value))
 	cPath := C.CString(path)
 	d.fields = append(d.fields, unsafe.Pointer(cPath))
-	return sp_setstring(d.ptr, cPath, unsafe.Pointer(sh.Data), len(value))
+	return sp_setstring(d.ptr, cPath, unsafe.Pointer(sh.Data), sh.Len)
 }
 
 func (d *Document) SetInt(path string, value int64) bool {
-	return sp_setint(d.ptr, path, value)
+	cPath := C.CString(path)
+	d.fields = append(d.fields, unsafe.Pointer(cPath))
+	return sp_setint(d.ptr, cPath, value)
 }
 
 func (d *Document) GetString(path string, size *int) string {
@@ -51,7 +54,10 @@ func (d *Document) GetString(path string, size *int) string {
 		Len:  *size,
 		Data: uintptr(ptr),
 	}
-	return *(*string)(unsafe.Pointer(sh))
+	s := *(*string)(unsafe.Pointer(sh))
+	cs := make([]byte, *size)
+	copy(cs, s)
+	return string(cs)
 }
 
 func (d *Document) GetInt(key string) int64 {
