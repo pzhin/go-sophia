@@ -5,19 +5,6 @@ import (
 	"unsafe"
 )
 
-type Order string
-
-const (
-	GreaterThan      Order = ">"
-	GT               Order = GreaterThan
-	GreaterThanEqual Order = ">="
-	GTE              Order = GreaterThanEqual
-	LessThan         Order = "<"
-	LT               Order = LessThan
-	LessThanEqual    Order = "<="
-	LTE              Order = LessThanEqual
-)
-
 // Database is used for accessing a database.
 type Database struct {
 	ptr    unsafe.Pointer

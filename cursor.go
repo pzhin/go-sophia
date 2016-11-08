@@ -7,20 +7,35 @@ import (
 	"unsafe"
 )
 
+type Order string
+
+const (
+	GreaterThan      Order = ">"
+	GT               Order = GreaterThan
+	GreaterThanEqual Order = ">="
+	GTE              Order = GreaterThanEqual
+	LessThan         Order = "<"
+	LT               Order = LessThan
+	LessThanEqual    Order = "<="
+	LTE              Order = LessThanEqual
+)
+
 const (
 	cursorPrefix = "prefix"
 	cursorOrder  = "order"
 )
 
-type CriteriaType int
+type criteriaType int
 
 const (
-	CriteriaMatch CriteriaType = iota
-	CriteriaRange
+	// Exact match
+	criteriaMatch criteriaType = iota
+	// Inclusive range
+	criteriaRange
 )
 
 type criteria struct {
-	t     CriteriaType
+	t     criteriaType
 	field string
 	value interface{}
 }
@@ -28,30 +43,53 @@ type criteria struct {
 type CursorCriteria interface {
 	Order(Order)
 	Prefix(string)
-	Add(CriteriaType, string, interface{})
+	Match(key string, value interface{})
+	Range(key string, from, to interface{})
 }
 
 type cursorCriteria struct {
 	crs    map[string]*criteria
-	checks map[string]func(*Document) bool
+	checks map[string]checkFunc
 }
+
+type checkFunc func(d *Document) bool
+
+var noopCheck checkFunc = func(d *Document) bool { return false }
 
 func NewCursorCriteria() CursorCriteria {
 	return &cursorCriteria{
 		crs:    make(map[string]*criteria),
-		checks: make(map[string]func(*Document) bool),
+		checks: make(map[string]checkFunc),
 	}
 }
 
 func (cc *cursorCriteria) Order(order Order) {
-	cc.Add(CriteriaMatch, cursorOrder, order)
+	cc.set(criteriaMatch, cursorOrder, order)
 }
 
 func (cc *cursorCriteria) Prefix(prefix string) {
-	cc.Add(CriteriaMatch, cursorPrefix, prefix)
+	cc.set(criteriaMatch, cursorPrefix, prefix)
 }
 
-func (cc *cursorCriteria) Add(typ CriteriaType, key string, value interface{}) {
+// Match adds condition of exact match
+func (cc *cursorCriteria) Match(key string, value interface{}) {
+	cc.set(criteriaMatch, key, value)
+}
+
+// Range - inclusive range [from;to]
+// In case of nil value 'from' takes minimum value and 'to' takes maximum value
+// 'from' and 'to' must be same kind and 'from' must be less than 'to'
+func (cc *cursorCriteria) Range(key string, from, to interface{}) {
+	val0 := reflect.ValueOf(from)
+	val1 := reflect.ValueOf(to)
+	if val0.Kind() != val1.Kind() {
+		panic(fmt.Sprintf("kinds of range criteria bounds must be same, got '%v' and '%v'",
+			val0.Kind(), val1.Kind()))
+	}
+	cc.set(criteriaRange, key, []interface{}{from, to})
+}
+
+func (cc *cursorCriteria) set(typ criteriaType, key string, value interface{}) {
 	cc.crs[key] = &criteria{
 		t:     typ,
 		field: key,
@@ -60,23 +98,25 @@ func (cc *cursorCriteria) Add(typ CriteriaType, key string, value interface{}) {
 }
 
 func (cc *cursorCriteria) apply(cur *Cursor) error {
+	order := cc.crs[cursorOrder]
+	custom := true
+	if order != nil && (order.value == LT || order.value == LTE) {
+		custom = false
+	}
 	for key, cr := range cc.crs {
-		val := reflect.ValueOf(cr.value)
-		switch val.Kind() {
-		case reflect.Int64, reflect.Int, reflect.Int32, reflect.Int16, reflect.Int8:
-			cur.doc.SetInt(key, val.Int())
-			cc.checks[cr.field] = generateCheckMatchInt(cr)
-		case reflect.String:
-			cur.doc.SetString(key, val.String())
-			if key != cursorOrder && key != cursorPrefix {
-				cc.checks[cr.field] = generateCheckMatchString(cr)
+		switch cr.t {
+		case criteriaMatch:
+			cur.doc.Set(key, cr.value)
+			cc.checks[cr.field] = generateCheckMatch(cr)
+		case criteriaRange:
+			val := reflect.ValueOf(cr.value).Index(0)
+			if !custom {
+				val = reflect.ValueOf(cr.value).Index(1)
 			}
-		case reflect.Slice:
-			if val.Len() != 2 {
-				return fmt.Errorf("wrong number of range query params: expected=%v actual=%v", 2, val.Len())
+			if !isNil(val) {
+				cur.doc.Set(key, val.Elem().Interface())
 			}
-			cur.doc.Set(key, val.Index(0).Interface())
-			cc.checks[cr.field] = generateCheck(cr)
+			cc.checks[cr.field] = generateCheckRange(cr)
 		default:
 			return errors.New("unsupported criteria type")
 		}
@@ -94,43 +134,116 @@ func (cc *cursorCriteria) check(doc *Document) bool {
 	return true
 }
 
-func generateCheckMatchInt(cr *criteria) func(d *Document) bool {
-	v := cr.value
-	i := reflect.ValueOf(v).Int()
-	return func(d *Document) bool {
-		return i == d.GetInt(cr.field)
-	}
-}
-
-func generateCheckMatchString(cr *criteria) func(d *Document) bool {
-	v := cr.value
-	s := reflect.ValueOf(v).String()
-	return func(d *Document) bool {
-		var size int
-		return s == d.GetString(cr.field, &size)
-	}
-}
-
-func generateCheck(cr *criteria) func(d *Document) bool {
-	v := cr.value
-	val0 := reflect.ValueOf(v).Index(0)
-	val1 := reflect.ValueOf(v).Index(1)
-	switch val0.Kind() {
+// TODO :: implement custom types
+func generateCheckMatch(cr *criteria) checkFunc {
+	val := reflect.ValueOf(cr.value)
+	switch val.Kind() {
 	case reflect.Int64, reflect.Int, reflect.Int32, reflect.Int16, reflect.Int8:
-		i0, i1 := val0.Int(), val1.Int()
+		i := val.Int()
 		return func(d *Document) bool {
-			sv := d.GetInt(cr.field)
-			return sv >= i0 && sv <= i1
+			return i == d.GetInt(cr.field)
+		}
+	case reflect.Uint64, reflect.Uint, reflect.Uint32, reflect.Uint16, reflect.Uint8:
+		i := val.Uint()
+		return func(d *Document) bool {
+			return int64(i) == d.GetInt(cr.field)
 		}
 	case reflect.String:
-		s0, s1 := val0.String(), val1.String()
+		str := val.String()
+		var size int
 		return func(d *Document) bool {
-			var size int
-			sv := d.GetString(cr.field, &size)
-			return sv >= s0 && sv <= s1
+			return str == d.GetString(cr.field, &size)
 		}
-	default:
-		return func(d *Document) bool { return false }
+	}
+	return noopCheck
+}
+
+// TODO :: implement custom types
+// TODO :: optimize, we don't need to check value if it is nil
+func generateCheckRange(cr *criteria) checkFunc {
+	v := cr.value
+	field := cr.field
+	val0 := reflect.ValueOf(v).Index(0).Elem()
+	val1 := reflect.ValueOf(v).Index(1).Elem()
+	switch val0.Kind() {
+	case reflect.Int64, reflect.Int, reflect.Int32, reflect.Int16, reflect.Int8:
+		return generateCompareInt(val0, val1, field)
+	case reflect.Uint64, reflect.Uint, reflect.Uint32, reflect.Uint16, reflect.Uint8:
+		return generateCompareUint(val0, val1, field)
+	case reflect.String:
+		return generateCompareString(val0, val1, field)
+	}
+	return noopCheck
+}
+
+func generateCompareInt(val0, val1 reflect.Value, field string) checkFunc {
+	switch {
+	case isNil(val0) && isNil(val1):
+		return noopCheck
+	case isNil(val0):
+		i := val1.Int()
+		return func(d *Document) bool {
+			return d.GetInt(field) <= i
+		}
+	case isNil(val1):
+		i := val0.Int()
+		return func(d *Document) bool {
+			return d.GetInt(field) >= i
+		}
+	}
+	i0 := val0.Int()
+	i1 := val1.Int()
+	return func(d *Document) bool {
+		sv := d.GetInt(field)
+		return sv >= i0 && sv <= i1
+	}
+}
+
+func generateCompareUint(val0, val1 reflect.Value, field string) checkFunc {
+	switch {
+	case isNil(val0) && isNil(val1):
+		return noopCheck
+	case isNil(val0):
+		i := val1.Uint()
+		return func(d *Document) bool {
+			return uint64(d.GetInt(field)) <= i
+		}
+	case isNil(val1):
+		i := val0.Uint()
+		return func(d *Document) bool {
+			return uint64(d.GetInt(field)) >= i
+		}
+	}
+	i0 := val0.Uint()
+	i1 := val1.Uint()
+	return func(d *Document) bool {
+		sv := uint64(d.GetInt(field))
+		return sv >= i0 && sv <= i1
+	}
+}
+
+func generateCompareString(val0, val1 reflect.Value, field string) checkFunc {
+	fmt.Printf("generateCompareString\n")
+	var size int
+	switch {
+	case isNil(val0) && isNil(val1):
+		return noopCheck
+	case isNil(val0):
+		i := val1.String()
+		return func(d *Document) bool {
+			return d.GetString(field, &size) <= i
+		}
+	case isNil(val1):
+		i := val0.String()
+		return func(d *Document) bool {
+			return d.GetString(field, &size) >= i
+		}
+	}
+	i0 := val0.String()
+	i1 := val1.String()
+	return func(d *Document) bool {
+		sv := d.GetString(field, &size)
+		return sv >= i0 && sv <= i1
 	}
 }
 
@@ -139,7 +252,7 @@ type Cursor struct {
 	ptr    unsafe.Pointer
 	doc    *Document
 	schema *Schema
-	check  func(doc *Document) bool
+	check  checkFunc
 }
 
 // Close closes the cursor. If a cursor is not closed, future operations

@@ -59,7 +59,7 @@ func testCursorMatch(t *testing.T) {
 
 	cr := NewCursorCriteria()
 	id := RecordsCount / 2
-	cr.Add(CriteriaMatch, "key", fmt.Sprintf(KeyTemplate, id))
+	cr.Match("key", fmt.Sprintf(KeyTemplate, id))
 	cursor, err := db.Cursor(cr)
 	require.Nil(t, err)
 	require.NotNil(t, env)
@@ -91,10 +91,7 @@ func testCursorRange(t *testing.T) {
 
 	cr := NewCursorCriteria()
 	id := RecordsCount / 4
-	cr.Add(CriteriaRange, "key", []string{
-		fmt.Sprintf(KeyTemplate, id),
-		fmt.Sprintf(KeyTemplate, id*3),
-	})
+	cr.Range("key", fmt.Sprintf(KeyTemplate, id), fmt.Sprintf(KeyTemplate, id*3))
 	cursor, err := db.Cursor(cr)
 	require.Nil(t, err)
 	require.NotNil(t, env)
