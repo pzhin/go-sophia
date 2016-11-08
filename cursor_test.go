@@ -8,6 +8,21 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TODO write tests:
+//  - using int key/values
+//    - match criteria
+//    - range criteria
+//  - using uint key/values
+//    - match criteria
+//    - range criteria
+//  - using order
+//    - using ASC order
+//    - using DESC order
+//  - using prefix
+//  - using different types for range criteria (catch panic)
+//  - using one bound for range criteria
+//    - upper bound
+//    - lower bound
 func initDB() {
 	env, _ := NewEnvironment()
 	defer env.Close()

@@ -128,7 +128,3 @@ func sp_delete(ptr1, ptr2 unsafe.Pointer) bool {
 func free(ptr unsafe.Pointer) {
 	C.free(ptr)
 }
-
-func goBytes(ptr unsafe.Pointer, size int64) []byte {
-	return C.GoBytes(ptr, C.int(size))
-}

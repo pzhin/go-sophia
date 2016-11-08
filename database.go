@@ -25,7 +25,6 @@ func (db *Database) Document() (doc *Document) {
 }
 
 // Get retrieves the value for the key.
-// TODO :: add destroy func to Document, it must be destroyed after usage
 func (db *Database) Get(doc *Document) (*Document, error) {
 	vptr := sp_get(db.ptr, doc.ptr)
 	if vptr == nil {
@@ -100,7 +99,7 @@ func (s *Schema) AddKey(name string, typ FieldType) error {
 		s.keys = make(map[string]FieldType)
 	}
 	if _, ok := s.keys[name]; ok {
-		return fmt.Errorf("dublicate key, '%v' has been already defined", name)
+		return fmt.Errorf("duplicate key, '%v' has been already defined", name)
 	}
 	s.keysNames = append(s.keysNames, name)
 	s.keys[name] = typ
@@ -112,7 +111,7 @@ func (s *Schema) AddValue(name string, typ FieldType) error {
 		s.values = make(map[string]FieldType)
 	}
 	if _, ok := s.values[name]; ok {
-		return fmt.Errorf("dublicate value, '%v' is already defined", name)
+		return fmt.Errorf("duplicate value, '%v' is already defined", name)
 	}
 	s.valuesNames = append(s.valuesNames, name)
 	s.values[name] = typ

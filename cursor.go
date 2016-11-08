@@ -1,7 +1,6 @@
 package sophia
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 	"unsafe"
@@ -117,8 +116,6 @@ func (cc *cursorCriteria) apply(cur *Cursor) error {
 				cur.doc.Set(key, val.Elem().Interface())
 			}
 			cc.checks[cr.field] = generateCheckRange(cr)
-		default:
-			return errors.New("unsupported criteria type")
 		}
 	}
 	cur.check = cc.check
@@ -159,7 +156,6 @@ func generateCheckMatch(cr *criteria) checkFunc {
 }
 
 // TODO :: implement custom types
-// TODO :: optimize, we don't need to check value if it is nil
 func generateCheckRange(cr *criteria) checkFunc {
 	v := cr.value
 	field := cr.field

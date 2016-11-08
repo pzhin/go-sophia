@@ -9,6 +9,18 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TODO write tests:
+//   - using upsert
+//     - success
+//     - error
+//   - using delete
+//     - error
+//   - creating schema
+//     - duplicate key
+//     - duplicate value
+//   - test more settings for environment
+//   - test more settings for database
+
 const (
 	KeyTemplate   = "key%v"
 	ValueTemplate = "value%v"
