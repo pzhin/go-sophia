@@ -11,7 +11,6 @@ const (
 	FieldType_UInt16Rev
 	FieldType_UInt32Rev
 	FieldType_UInt64Rev
-	FieldType_Int64
 	FieldType_String
 )
 
@@ -24,7 +23,6 @@ var fieldTypeNames = map[FieldType]string{
 	FieldType_UInt16Rev: "u16rev",
 	FieldType_UInt32Rev: "u32rev",
 	FieldType_UInt64Rev: "u64rev",
-	FieldType_Int64:     "i64",
 	FieldType_String:    "string",
 }
 

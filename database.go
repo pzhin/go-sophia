@@ -26,15 +26,6 @@ type Database struct {
 	schema *Schema
 }
 
-// Close closes the database and frees its associated memory. You must
-// call Close on any database opened with Open()
-func (db *Database) Close() error {
-	if nil != db.env {
-		return db.env.Close()
-	}
-	return nil
-}
-
 func (db *Database) Document() (doc *Document) {
 	ptr := sp_document(db.ptr)
 	if ptr == nil {

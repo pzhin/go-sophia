@@ -18,6 +18,7 @@ func NewDocument(ptr unsafe.Pointer) *Document {
 }
 
 // TODO :: implement another types
+// TODO :: write test for custom object
 func (d *Document) Set(path string, val interface{}) bool {
 	v := reflect.ValueOf(val)
 	switch v.Kind() {
