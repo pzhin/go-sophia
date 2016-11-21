@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"math"
 )
 
 // TODO write tests:
@@ -27,7 +28,7 @@ const (
 
 	DBPath       = "sophia"
 	DBName       = "test"
-	RecordsCount = 10
+	RecordsCount = 10000
 )
 
 func TestSophiaDatabaseCRUD(t *testing.T) {
@@ -189,9 +190,11 @@ func TestSetMultiKey(t *testing.T) {
 	require.NotNil(t, db)
 	require.True(t, env.Open())
 
-	for i := 0; i < RecordsCount; i++ {
-		for j := 0; j < RecordsCount; j++ {
-			for k := 0; k < RecordsCount; k++ {
+	count := int(math.Sqrt(RecordsCount))
+
+	for i := 0; i < count; i++ {
+		for j := 0; j < count; j++ {
+			for k := 0; k < count; k++ {
 				doc := db.Document()
 				require.True(t, doc.Set("key", i))
 				require.True(t, doc.Set("key_j", uint64(j)))
@@ -203,9 +206,9 @@ func TestSetMultiKey(t *testing.T) {
 			}
 		}
 	}
-	for i := 0; i < RecordsCount; i++ {
-		for j := 0; j < RecordsCount; j++ {
-			for k := 0; k < RecordsCount; k++ {
+	for i := 0; i < count; i++ {
+		for j := 0; j < count; j++ {
+			for k := 0; k < count; k++ {
 				doc := db.Document()
 				require.NotNil(t, doc)
 				require.True(t, doc.Set("key", int64(i)))

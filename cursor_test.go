@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"math"
 )
 
 // TODO write tests:
@@ -72,13 +73,15 @@ func testCursorMatch(t *testing.T) {
 	require.NotNil(t, db)
 	require.True(t, env.Open())
 
-	cr := NewCursorCriteria()
 	id := RecordsCount / 2
+
+	cr := NewCursorCriteria()
 	cr.Match("key", fmt.Sprintf(KeyTemplate, id))
 	cursor, err := db.Cursor(cr)
 	require.Nil(t, err)
-	require.NotNil(t, env)
+	require.NotNil(t, cursor)
 	defer cursor.Close()
+
 	var size, counter int
 	for d := cursor.Next(); d != nil; d = cursor.Next() {
 		require.Equal(t, fmt.Sprintf(KeyTemplate, id), d.GetString("key", &size))
@@ -104,19 +107,20 @@ func testCursorRange(t *testing.T) {
 	require.NotNil(t, db)
 	require.True(t, env.Open())
 
+	startId := RecordsCount / 4
+	expectedCount := int(math.Floor(RecordsCount / 1.8))
+
 	cr := NewCursorCriteria()
-	id := RecordsCount / 4
-	cr.Range("key", fmt.Sprintf(KeyTemplate, id), fmt.Sprintf(KeyTemplate, id*3))
+	cr.Range("key", fmt.Sprintf(KeyTemplate, startId),
+		fmt.Sprintf(KeyTemplate, startId*3))
 	cursor, err := db.Cursor(cr)
 	require.Nil(t, err)
-	require.NotNil(t, env)
+	require.NotNil(t, cursor)
 	defer cursor.Close()
-	var size, counter int
+
+	var counter int
 	for d := cursor.Next(); d != nil; d = cursor.Next() {
-		require.Equal(t, fmt.Sprintf(KeyTemplate, id), d.GetString("key", &size))
-		require.Equal(t, fmt.Sprintf(ValueTemplate, id), d.GetString("value", &size))
-		id++
 		counter++
 	}
-	require.Equal(t, RecordsCount/2, counter)
+	require.Equal(t, expectedCount, counter)
 }

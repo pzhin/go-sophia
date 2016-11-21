@@ -75,7 +75,7 @@ func (cc *cursorCriteria) Match(key string, value interface{}) {
 	cc.set(criteriaMatch, key, value)
 }
 
-// Range - inclusive range [from;to]
+// Range - range request with inclusive 'from' and exclusive 'to' [from;to)
 // In case of nil value 'from' takes minimum value and 'to' takes maximum value
 // 'from' and 'to' must be same kind and 'from' must be less than 'to'
 func (cc *cursorCriteria) Range(key string, from, to interface{}) {
@@ -191,7 +191,7 @@ func generateCompareInt(val0, val1 reflect.Value, field string) checkFunc {
 	i1 := val1.Int()
 	return func(d *Document) bool {
 		sv := d.GetInt(field)
-		return sv >= i0 && sv <= i1
+		return sv >= i0 && sv < i1
 	}
 }
 
@@ -214,12 +214,11 @@ func generateCompareUint(val0, val1 reflect.Value, field string) checkFunc {
 	i1 := val1.Uint()
 	return func(d *Document) bool {
 		sv := uint64(d.GetInt(field))
-		return sv >= i0 && sv <= i1
+		return sv >= i0 && sv < i1
 	}
 }
 
 func generateCompareString(val0, val1 reflect.Value, field string) checkFunc {
-	fmt.Printf("generateCompareString\n")
 	var size int
 	switch {
 	case isNil(val0) && isNil(val1):
@@ -239,7 +238,7 @@ func generateCompareString(val0, val1 reflect.Value, field string) checkFunc {
 	i1 := val1.String()
 	return func(d *Document) bool {
 		sv := d.GetString(field, &size)
-		return sv >= i0 && sv <= i1
+		return sv >= i0 && sv < i1
 	}
 }
 
