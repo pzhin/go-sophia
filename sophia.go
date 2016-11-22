@@ -21,6 +21,7 @@ func newStore(ptr unsafe.Pointer) *store {
 // TODO :: implement another types
 func (s *store) Set(path string, val interface{}) bool {
 	v := reflect.ValueOf(val)
+
 	switch v.Kind() {
 	case reflect.String:
 		return s.SetString(path, v.String())
@@ -28,12 +29,12 @@ func (s *store) Set(path string, val interface{}) bool {
 		return s.SetInt(path, v.Int())
 	case reflect.Uint, reflect.Uint64, reflect.Uint8, reflect.Uint16, reflect.Uint32:
 		return s.SetInt(path, int64(v.Uint()))
-	default:
-		cPath := cString(path)
-		s.pointers = append(s.pointers, unsafe.Pointer(cPath))
-		size := int(reflect.TypeOf(val).Size())
-		return sp_setstring(s.ptr, cPath, (unsafe.Pointer)(reflect.ValueOf(val).Pointer()), size)
 	}
+
+	cPath := cString(path)
+	s.pointers = append(s.pointers, unsafe.Pointer(cPath))
+	size := int(reflect.TypeOf(val).Size())
+	return sp_setstring(s.ptr, cPath, (unsafe.Pointer)(reflect.ValueOf(val).Pointer()), size)
 }
 
 func (s *store) SetString(path, val string) bool {

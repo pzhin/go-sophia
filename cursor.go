@@ -27,7 +27,7 @@ type cursor struct {
 	ptr    unsafe.Pointer
 	doc    *Document
 	schema *Schema
-	check  checkFunc
+	check  func(d *Document) (match, stop bool)
 }
 
 // Close closes the cursor. If a cursor is not closed, future operations
@@ -40,14 +40,18 @@ func (cur *cursor) Close() error {
 // true if there is a next row, false if the cursor has reached the
 // end of the rows.
 func (cur *cursor) Next() *Document {
+	cur.doc.Free()
 	ptr := sp_get(cur.ptr, cur.doc.ptr)
 	if ptr == nil {
 		return nil
 	}
-	cur.doc.Free()
 	d := NewDocument(ptr)
 	cur.doc = d
-	if !cur.check(d) {
+	match, stop := cur.check(d)
+	if stop {
+		return nil
+	}
+	if !match {
 		return cur.Next()
 	}
 	return d

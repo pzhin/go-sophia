@@ -33,13 +33,13 @@ type criteria struct {
 
 type cursorCriteria struct {
 	crs    map[string]*criteria
-	checks map[string]checkFunc
+	checks []checkFunc
 }
 
 func NewCursorCriteria() CursorCriteria {
 	return &cursorCriteria{
 		crs:    make(map[string]*criteria),
-		checks: make(map[string]checkFunc),
+		checks: make([]checkFunc, 0),
 	}
 }
 
@@ -77,39 +77,57 @@ func (cc *cursorCriteria) set(typ criteriaType, key string, value interface{}) {
 	}
 }
 
-func (cc *cursorCriteria) apply(cur *cursor) error {
+func (cc *cursorCriteria) apply(cur *cursor, schema *Schema) error {
 	order := cc.crs[cursorOrder]
 	custom := true
 	if order != nil && (order.value == LT || order.value == LTE) {
 		custom = false
 	}
-	for key, cr := range cc.crs {
+	fields := append(schema.keysNames, schema.valuesNames...)
+	for _, field := range fields {
+		cr, ok := cc.crs[field]
+		if !ok {
+			continue
+		}
+		var check checkFunc
 		switch cr.t {
 		case criteriaMatch:
-			cur.doc.Set(key, cr.value)
-			cc.checks[cr.field] = generateCheckMatch(cr)
+			cur.doc.Set(field, cr.value)
+			check = generateCheckMatch(cr)
 		case criteriaRange:
-			val := reflect.ValueOf(cr.value).Index(0)
-			if !custom {
-				val = reflect.ValueOf(cr.value).Index(1)
+			val0 := reflect.ValueOf(cr.value).Index(0)
+			val1 := reflect.ValueOf(cr.value).Index(1)
+			if custom && !isNil(val0) {
+				cur.doc.Set(field, val0.Elem().Interface())
 			}
-			if !isNil(val) {
-				cur.doc.Set(key, val.Elem().Interface())
+			if !custom && !isNil(val1) {
+				cur.doc.Set(field, val1.Elem().Interface())
 			}
-			cc.checks[cr.field] = generateCheckRange(cr)
+			check = generateCheckRange(cr.field, val0, val1)
+		}
+		if check != nil {
+			cc.checks = append(cc.checks, check)
 		}
 	}
-	cur.check = cc.check
+	if len(cc.checks) > 0 {
+		cur.check = cc.check
+	} else {
+		cur.check = func(doc *Document) (bool, bool) { return true, false }
+	}
 	return nil
 }
 
-func (cc *cursorCriteria) check(doc *Document) bool {
-	for _, check := range cc.checks {
-		if !check(doc) {
-			return false
+func (cc *cursorCriteria) check(doc *Document) (bool, bool) {
+	match := cc.checks[0](doc)
+	if !match {
+		return false, true
+	}
+	for i := 1; i < len(cc.checks); i++ {
+		if !cc.checks[i](doc) {
+			return false, false
 		}
 	}
-	return true
+	return true, false
 }
 
 // TODO :: implement custom types
@@ -133,15 +151,15 @@ func generateCheckMatch(cr *criteria) checkFunc {
 			return str == d.GetString(cr.field, &size)
 		}
 	}
-	return noopCheck
+	return nil
 }
 
 // TODO :: implement custom types
-func generateCheckRange(cr *criteria) checkFunc {
-	v := cr.value
-	field := cr.field
-	val0 := reflect.ValueOf(v).Index(0).Elem()
-	val1 := reflect.ValueOf(v).Index(1).Elem()
+func generateCheckRange(field string, val0, val1 reflect.Value) checkFunc {
+	if isNil(val0) && isNil(val1) {
+		return nil
+	}
+
 	switch val0.Kind() {
 	case reflect.Int64, reflect.Int, reflect.Int32, reflect.Int16, reflect.Int8:
 		return generateCompareInt(val0, val1, field)
@@ -150,24 +168,25 @@ func generateCheckRange(cr *criteria) checkFunc {
 	case reflect.String:
 		return generateCompareString(val0, val1, field)
 	}
-	return noopCheck
+
+	return nil
 }
 
 func generateCompareInt(val0, val1 reflect.Value, field string) checkFunc {
-	switch {
-	case isNil(val0) && isNil(val1):
-		return noopCheck
-	case isNil(val0):
+	if isNil(val0) {
 		i := val1.Int()
 		return func(d *Document) bool {
-			return d.GetInt(field) <= i
+			return d.GetInt(field) < i
 		}
-	case isNil(val1):
+	}
+
+	if isNil(val1) {
 		i := val0.Int()
 		return func(d *Document) bool {
 			return d.GetInt(field) >= i
 		}
 	}
+
 	i0 := val0.Int()
 	i1 := val1.Int()
 	return func(d *Document) bool {
@@ -177,20 +196,20 @@ func generateCompareInt(val0, val1 reflect.Value, field string) checkFunc {
 }
 
 func generateCompareUint(val0, val1 reflect.Value, field string) checkFunc {
-	switch {
-	case isNil(val0) && isNil(val1):
-		return noopCheck
-	case isNil(val0):
+	if isNil(val0) {
 		i := val1.Uint()
 		return func(d *Document) bool {
-			return uint64(d.GetInt(field)) <= i
+			return uint64(d.GetInt(field)) < i
 		}
-	case isNil(val1):
+	}
+
+	if isNil(val1) {
 		i := val0.Uint()
 		return func(d *Document) bool {
 			return uint64(d.GetInt(field)) >= i
 		}
 	}
+
 	i0 := val0.Uint()
 	i1 := val1.Uint()
 	return func(d *Document) bool {
@@ -201,20 +220,20 @@ func generateCompareUint(val0, val1 reflect.Value, field string) checkFunc {
 
 func generateCompareString(val0, val1 reflect.Value, field string) checkFunc {
 	var size int
-	switch {
-	case isNil(val0) && isNil(val1):
-		return noopCheck
-	case isNil(val0):
+	if isNil(val0) {
 		i := val1.String()
 		return func(d *Document) bool {
-			return d.GetString(field, &size) <= i
+			return d.GetString(field, &size) < i
 		}
-	case isNil(val1):
+	}
+
+	if isNil(val1) {
 		i := val0.String()
 		return func(d *Document) bool {
 			return d.GetString(field, &size) >= i
 		}
 	}
+
 	i0 := val0.String()
 	i1 := val1.String()
 	return func(d *Document) bool {
