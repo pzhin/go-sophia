@@ -49,12 +49,8 @@ func initDB() {
 func TestCursor(t *testing.T) {
 	initDB()
 	defer os.RemoveAll(DBPath)
-	if !t.Run("Cursor", testCursorMatch) {
-		t.Fatal("Cursor operations are failed")
-	}
-	if !t.Run("Cursor", testCursorRange) {
-		t.Fatal("Cursor operations are failed")
-	}
+	t.Run("Cursor match", testCursorMatch)
+	t.Run("Cursor range", testCursorRange)
 }
 func testCursorMatch(t *testing.T) {
 	env, err := NewEnvironment()

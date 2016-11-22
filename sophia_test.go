@@ -28,7 +28,7 @@ const (
 
 	DBPath       = "sophia"
 	DBName       = "test"
-	RecordsCount = 10000
+	RecordsCount = 500000
 )
 
 func TestSophiaDatabaseCRUD(t *testing.T) {
@@ -190,7 +190,7 @@ func TestSetMultiKey(t *testing.T) {
 	require.NotNil(t, db)
 	require.True(t, env.Open())
 
-	count := int(math.Sqrt(RecordsCount))
+	count := int(math.Pow(RecordsCount, 1/3))
 
 	for i := 0; i < count; i++ {
 		for j := 0; j < count; j++ {

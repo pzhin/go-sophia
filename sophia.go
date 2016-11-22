@@ -1,130 +1,75 @@
 package sophia
 
 import (
-	"errors"
+	"reflect"
 	"unsafe"
 )
 
-/*
-#cgo LDFLAGS: -lsophia
-#include <sophia.h>
-#include <stdio.h>
-#include <stdlib.h>
-extern void    *sp_env(void);
-extern void    *sp_document(void*);
-extern int      sp_setstring(void*, const char*, const void*, int);
-extern int      sp_setint(void*, const char*, int64_t);
-extern void    *sp_getobject(void*, const char*);
-extern void    *sp_getstring(void*, const char*, int*);
-extern int64_t  sp_getint(void*, const char*);
-extern int      sp_open(void*);
-extern int      sp_destroy(void*);
-extern int      sp_set(void*, void*);
-extern int      sp_upsert(void*, void*);
-extern int      sp_delete(void*, void*);
-extern void    *sp_get(void*, void*);
-extern void    *sp_cursor(void*);
-extern void    *sp_begin(void*);
-extern int      sp_prepare(void*);
-extern int      sp_commit(void*);
-char* pointer_to_string(void* ptr)
-{
-	return (char*)ptr;
-}
-int sp_setstringS(void* obj, char* path, char* val, int size)
-{
-	return sp_setstring(obj, path, (void*)val, size);
-}
-*/
-import "C"
+type store struct {
+	ptr unsafe.Pointer
 
-type size_t C.size_t
+	pointers []unsafe.Pointer
+}
 
-// sp_close closes the pointer and sets it to nil
-// to ensure it cannot be closed twice.
-func sp_close(p unsafe.Pointer) error {
-	if nil == p {
-		return nil
+func newStore(ptr unsafe.Pointer) *store {
+	return &store{
+		ptr:      ptr,
+		pointers: make([]unsafe.Pointer, 0),
 	}
-	if 0 != C.sp_destroy(p) {
-		return errors.New("failed close resource")
+}
+
+// TODO :: implement another types
+func (s *store) Set(path string, val interface{}) bool {
+	v := reflect.ValueOf(val)
+	switch v.Kind() {
+	case reflect.String:
+		return s.SetString(path, v.String())
+	case reflect.Int, reflect.Int64, reflect.Int8, reflect.Int16, reflect.Int32:
+		return s.SetInt(path, v.Int())
+	case reflect.Uint, reflect.Uint64, reflect.Uint8, reflect.Uint16, reflect.Uint32:
+		return s.SetInt(path, int64(v.Uint()))
+	default:
+		cPath := cString(path)
+		s.pointers = append(s.pointers, unsafe.Pointer(cPath))
+		size := int(reflect.TypeOf(val).Size())
+		return sp_setstring(s.ptr, cPath, (unsafe.Pointer)(reflect.ValueOf(val).Pointer()), size)
 	}
-	p = nil
-	return nil
 }
 
-// TODO :: check that all memmory will be freed
-// wrapper for sp_setstring
-func sp_setstring(obj unsafe.Pointer, path *C.char, val unsafe.Pointer, size int) bool {
-	return C.sp_setstring(obj, path, val, C.int(size)) == 0
+func (s *store) SetString(path, val string) bool {
+	cPath := cString(path)
+	cVal := cString(val)
+	s.pointers = append(s.pointers, unsafe.Pointer(cPath), unsafe.Pointer(cVal))
+	return sp_setstring_s(s.ptr, cPath, cVal, len(val))
 }
 
-func sp_setstring_s(obj unsafe.Pointer, path *C.char, val *C.char, size int) bool {
-	return C.sp_setstringS(obj, path, val, C.int(size)) == 0
+func (s *store) SetInt(path string, val int64) bool {
+	cPath := cString(path)
+	s.pointers = append(s.pointers, unsafe.Pointer(cPath))
+	return sp_setint(s.ptr, cPath, val)
 }
 
-// TODO :: memory leak
-func sp_getstring(obj unsafe.Pointer, path string, size *int) unsafe.Pointer {
-	cPath := C.CString(path)
-	cSize := C.int(*size)
-	ptr := unsafe.Pointer(C.sp_getstring(obj, cPath, &cSize))
-	//defer free(unsafe.Pointer(cPath))
-	*size = int(cSize)
-	return ptr
+func (s *store) Get(path string, size *int) unsafe.Pointer {
+	return sp_getstring(s.ptr, path, size)
 }
 
-func GoString(ptr unsafe.Pointer) string {
-	cStr := C.pointer_to_string(ptr)
-	return C.GoString(cStr)
+func (s *store) GetString(path string, size *int) string {
+	ptr := sp_getstring(s.ptr, path, size)
+	sh := reflect.StringHeader{Data: uintptr(ptr), Len: *size}
+	return *(*string)(unsafe.Pointer(&sh))
 }
 
-func sp_setint(obj unsafe.Pointer, path *C.char, val int64) bool {
-	return C.sp_setint(obj, path, C.int64_t(val)) == 0
+func (s *store) GetObject(path string) unsafe.Pointer {
+	return sp_getobject(s.ptr, path)
 }
 
-func sp_getint(obj unsafe.Pointer, path string) int64 {
-	cPath := C.CString(path)
-	ptr := C.sp_getint(obj, cPath)
-	return *(*int64)(unsafe.Pointer(&ptr))
+func (s *store) GetInt(key string) int64 {
+	return sp_getint(s.ptr, key)
 }
 
-func sp_getobject(obj unsafe.Pointer, path string) unsafe.Pointer {
-	cPath := C.CString(path)
-	return unsafe.Pointer(C.sp_getobject(obj, cPath))
-}
-
-func sp_open(ptr unsafe.Pointer) bool {
-	return C.sp_open(ptr) == 0
-}
-
-func sp_env() unsafe.Pointer {
-	return unsafe.Pointer(C.sp_env())
-}
-
-func sp_cursor(ptr unsafe.Pointer) unsafe.Pointer {
-	return unsafe.Pointer(C.sp_cursor(ptr))
-}
-
-func sp_document(ptr unsafe.Pointer) unsafe.Pointer {
-	return unsafe.Pointer(C.sp_document(ptr))
-}
-
-func sp_get(ptr1, ptr2 unsafe.Pointer) unsafe.Pointer {
-	return unsafe.Pointer(C.sp_get(ptr1, ptr2))
-}
-
-func sp_set(ptr1, ptr2 unsafe.Pointer) bool {
-	return C.sp_set(ptr1, ptr2) == 0
-}
-
-func sp_upsert(ptr1, ptr2 unsafe.Pointer) bool {
-	return C.sp_upsert(ptr1, ptr2) == 0
-}
-
-func sp_delete(ptr1, ptr2 unsafe.Pointer) bool {
-	return C.sp_delete(ptr1, ptr2) == 0
-}
-
-func free(ptr unsafe.Pointer) {
-	C.free(ptr)
+func (s *store) Free() {
+	for _, f := range s.pointers {
+		free(f)
+	}
+	s.pointers = s.pointers[:0]
 }

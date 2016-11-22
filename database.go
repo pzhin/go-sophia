@@ -18,19 +18,17 @@ func (db *Database) Document() (doc *Document) {
 	if ptr == nil {
 		return
 	}
-	doc = &Document{
-		ptr: ptr,
-	}
+	doc = NewDocument(ptr)
 	return
 }
 
 // Get retrieves the value for the key.
 func (db *Database) Get(doc *Document) (*Document, error) {
-	vptr := sp_get(db.ptr, doc.ptr)
-	if vptr == nil {
+	ptr := sp_get(db.ptr, doc.ptr)
+	if ptr == nil {
 		return nil, fmt.Errorf("failed Get document: err=%v", db.env.Error())
 	}
-	return NewDocument(vptr), nil
+	return NewDocument(ptr), nil
 }
 
 // Set sets the value of the key.
@@ -65,7 +63,7 @@ func (db *Database) Delete(doc *Document) error {
 // the key is included or excluded.
 //
 // Iterate over values with Fetch or Next methods.
-func (db *Database) Cursor(criteria CursorCriteria) (*Cursor, error) {
+func (db *Database) Cursor(criteria CursorCriteria) (*cursor, error) {
 	cPtr := sp_cursor(db.env.ptr)
 	if nil == cPtr {
 		return nil, fmt.Errorf("failed create cursor: err=%v", db.env.Error())
@@ -74,7 +72,7 @@ func (db *Database) Cursor(criteria CursorCriteria) (*Cursor, error) {
 	if nil == doc {
 		return nil, fmt.Errorf("failed get document: err=%v", db.env.Error())
 	}
-	cur := &Cursor{
+	cur := &cursor{
 		ptr: cPtr,
 		doc: doc,
 	}
@@ -83,37 +81,4 @@ func (db *Database) Cursor(criteria CursorCriteria) (*Cursor, error) {
 		return nil, err
 	}
 	return cur, nil
-}
-
-type Schema struct {
-	// name -> type
-	keys      map[string]FieldType
-	keysNames []string
-	// name -> type
-	values      map[string]FieldType
-	valuesNames []string
-}
-
-func (s *Schema) AddKey(name string, typ FieldType) error {
-	if s.keys == nil {
-		s.keys = make(map[string]FieldType)
-	}
-	if _, ok := s.keys[name]; ok {
-		return fmt.Errorf("duplicate key, '%v' has been already defined", name)
-	}
-	s.keysNames = append(s.keysNames, name)
-	s.keys[name] = typ
-	return nil
-}
-
-func (s *Schema) AddValue(name string, typ FieldType) error {
-	if s.values == nil {
-		s.values = make(map[string]FieldType)
-	}
-	if _, ok := s.values[name]; ok {
-		return fmt.Errorf("duplicate value, '%v' is already defined", name)
-	}
-	s.valuesNames = append(s.valuesNames, name)
-	s.values[name] = typ
-	return nil
 }
