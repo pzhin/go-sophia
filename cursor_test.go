@@ -52,6 +52,7 @@ func TestCursor(t *testing.T) {
 	t.Run("Cursor match", testCursorMatch)
 	t.Run("Cursor range", testCursorRange)
 }
+
 func testCursorMatch(t *testing.T) {
 	env, err := NewEnvironment()
 	require.Nil(t, err)
@@ -86,6 +87,7 @@ func testCursorMatch(t *testing.T) {
 	}
 	require.Equal(t, 1, counter)
 }
+
 func testCursorRange(t *testing.T) {
 	env, err := NewEnvironment()
 	require.Nil(t, err)

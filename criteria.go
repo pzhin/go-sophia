@@ -95,13 +95,13 @@ func (cc *cursorCriteria) apply(cur *cursor, schema *Schema) error {
 			cur.doc.Set(field, cr.value)
 			check = generateCheckMatch(cr)
 		case criteriaRange:
-			val0 := reflect.ValueOf(cr.value).Index(0)
-			val1 := reflect.ValueOf(cr.value).Index(1)
+			val0 := reflect.ValueOf(cr.value).Index(0).Elem()
+			val1 := reflect.ValueOf(cr.value).Index(1).Elem()
 			if custom && !isNil(val0) {
-				cur.doc.Set(field, val0.Elem().Interface())
+				cur.doc.Set(field, val0.Interface())
 			}
 			if !custom && !isNil(val1) {
-				cur.doc.Set(field, val1.Elem().Interface())
+				cur.doc.Set(field, val1.Interface())
 			}
 			check = generateCheckRange(cr.field, val0, val1)
 		}

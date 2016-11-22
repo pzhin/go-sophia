@@ -76,7 +76,7 @@ func (db *Database) Cursor(criteria CursorCriteria) (*cursor, error) {
 		ptr: cPtr,
 		doc: doc,
 	}
-	err := criteria.(*cursorCriteria).apply(cur)
+	err := criteria.(*cursorCriteria).apply(cur, db.schema)
 	if err != nil {
 		return nil, err
 	}
