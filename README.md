@@ -1,4 +1,4 @@
-# go-sophia
+# go-sophia [![Go Report Card](https://goreportcard.com/badge/github.com/pzhin/go-sophia)](https://goreportcard.com/report/github.com/pzhin/go-sophia) [![GoDoc](https://godoc.org/github.com/pzhin/go-sophia?status.svg)](https://godoc.org/github.com/pzhin/go-sophia)
 go-sophia is a Go (golang) binding to the Sophia key-value database (http://sophia.systems/)
 
 #Installation
