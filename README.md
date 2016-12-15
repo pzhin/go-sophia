@@ -1,4 +1,6 @@
-# go-sophia [![Go Report Card](https://goreportcard.com/badge/github.com/pzhin/go-sophia)](https://goreportcard.com/report/github.com/pzhin/go-sophia) [![GoDoc](https://godoc.org/github.com/pzhin/go-sophia?status.svg)](https://godoc.org/github.com/pzhin/go-sophia)
+[![Go Report Card](https://goreportcard.com/badge/github.com/pzhin/go-sophia)](https://goreportcard.com/report/github.com/pzhin/go-sophia) [![codebeat badge](https://codebeat.co/badges/dd136517-c8e3-4ab2-8ab4-ae34645cc826)](https://codebeat.co/projects/github-com-pzhin-go-sophia) [![GoDoc](https://godoc.org/github.com/pzhin/go-sophia?status.svg)](https://godoc.org/github.com/pzhin/go-sophia)
+
+# go-sophia 
 go-sophia is a Go (golang) binding to the Sophia key-value database (http://sophia.systems/)
 
 #Installation
