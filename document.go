@@ -8,7 +8,7 @@ type Document struct {
 	*store
 }
 
-func NewDocument(ptr unsafe.Pointer) *Document {
+func newDocument(ptr unsafe.Pointer) *Document {
 	return &Document{
 		store: newStore(ptr),
 	}

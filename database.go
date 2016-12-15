@@ -18,7 +18,7 @@ func (db *Database) Document() (doc *Document) {
 	if ptr == nil {
 		return
 	}
-	doc = NewDocument(ptr)
+	doc = newDocument(ptr)
 	return
 }
 
@@ -28,7 +28,7 @@ func (db *Database) Get(doc *Document) (*Document, error) {
 	if ptr == nil {
 		return nil, fmt.Errorf("failed Get document: err=%v", db.env.Error())
 	}
-	return NewDocument(ptr), nil
+	return newDocument(ptr), nil
 }
 
 // Set sets the value of the key.
@@ -41,6 +41,7 @@ func (db *Database) Set(doc *Document) error {
 
 // Set sets the value of the key.
 func (db *Database) Upsert(doc *Document) error {
+	panic("not supported yet")
 	if !sp_upsert(db.ptr, doc.ptr) {
 		return fmt.Errorf("failed Upsert document: err=%v", db.env.Error())
 	}
@@ -55,14 +56,7 @@ func (db *Database) Delete(doc *Document) error {
 	return nil
 }
 
-// Cursor returns a Cursor for iterating over rows in the database.
-//
-// If no key is provided, the Cursor will iterate over all rows.
-//
-// The order flag decides the direction of the iteration, and whether
-// the key is included or excluded.
-//
-// Iterate over values with Fetch or Next methods.
+// Cursor returns a Cursor for iterating over rows in the database
 func (db *Database) Cursor(criteria CursorCriteria) (*cursor, error) {
 	cPtr := sp_cursor(db.env.ptr)
 	if nil == cPtr {

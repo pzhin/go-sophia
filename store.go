@@ -5,9 +5,15 @@ import (
 	"unsafe"
 )
 
+// store manages memory allocation and free for C variables
+// Interface for sophia object
+// Only for internal usage
 type store struct {
+	// ptr Pointer to C sophia object
 	ptr unsafe.Pointer
 
+	// pointers slice of pointers to allocated C variables,
+	// that must be freed after store usage
 	pointers []unsafe.Pointer
 }
 
@@ -68,6 +74,7 @@ func (s *store) GetInt(key string) int64 {
 	return sp_getint(s.ptr, key)
 }
 
+// Free frees allocated memory for all C variables, that were in this store
 func (s *store) Free() {
 	for _, f := range s.pointers {
 		free(f)

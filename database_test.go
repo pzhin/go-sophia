@@ -230,6 +230,7 @@ func TestSetMultiKey(t *testing.T) {
 }
 
 func BenchmarkDatabase_Set(b *testing.B) {
+	defer os.RemoveAll(DBPath)
 	env, err := NewEnvironment()
 	if !assert.Nil(b, err) {
 		b.Fatalf("failed create environment: err=%v", err)

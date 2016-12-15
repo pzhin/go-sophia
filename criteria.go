@@ -14,16 +14,21 @@ const (
 	criteriaRange
 )
 
+// CursorCriteria It's an interface to define what rows do you want to get
 type CursorCriteria interface {
 	Order(Order)
 	Prefix(string)
+	// Match create a criteria of exact match.
+	// Overwrites previous criteria for this key if it was defined.
 	Match(key string, value interface{})
+	// Range create a criteria of inclusive 'from' and exclusive 'to' [from;to).
+	// In case of nil value 'from' takes minimum value and 'to' takes maximum value.
+	// 'from' and 'to' must be same kind and 'from' must be less than 'to'.
+	// Overwrites previous criteria for this key if it was defined.
 	Range(key string, from, to interface{})
 }
 
 type checkFunc func(d *Document) bool
-
-var noopCheck checkFunc = func(d *Document) bool { return true }
 
 type criteria struct {
 	t     criteriaType
@@ -51,7 +56,6 @@ func (cc *cursorCriteria) Prefix(prefix string) {
 	cc.set(criteriaMatch, cursorPrefix, prefix)
 }
 
-// Match adds condition of exact match
 func (cc *cursorCriteria) Match(key string, value interface{}) {
 	cc.set(criteriaMatch, key, value)
 }

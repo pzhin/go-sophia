@@ -1,10 +1,21 @@
 package sophia
 
 import (
+	"errors"
 	"unsafe"
 )
 
 type Order string
+
+// Cursor iterates over key-values in a database.
+type Cursor interface {
+	// Next fetches the next row for the cursor
+	// Returns next row if it exists else it will return nil
+	Next() *Document
+	// Close closes cursor
+	// Cursor won't be accessible after this
+	Close() error
+}
 
 const (
 	GreaterThan      Order = ">"
@@ -22,30 +33,39 @@ const (
 	cursorOrder  = "order"
 )
 
+var ErrClosedCursorUsage = errors.New("cursor is already closed")
+
 // Cursor iterates over key-values in a database.
 type cursor struct {
 	ptr    unsafe.Pointer
 	doc    *Document
 	schema *Schema
 	check  func(d *Document) (match, stop bool)
+	closed bool
 }
 
 // Close closes the cursor. If a cursor is not closed, future operations
 // on the database can hang indefinitely.
 func (cur *cursor) Close() error {
+	if cur.closed {
+		return ErrClosedCursorUsage
+	}
+	cur.doc.Free()
+	cur.closed = true
 	return sp_close(cur.ptr)
 }
 
-// Fetch fetches the next row for the cursor, and returns
-// true if there is a next row, false if the cursor has reached the
-// end of the rows.
+// Next fetches the next row for the cursor
+// Returns next row if it exists else it will return nil
 func (cur *cursor) Next() *Document {
+	if cur.closed {
+		return nil
+	}
 	ptr := sp_get(cur.ptr, cur.doc.ptr)
 	if ptr == nil {
 		return nil
 	}
-	cur.doc.Free()
-	d := NewDocument(ptr)
+	d := newDocument(ptr)
 	cur.doc = d
 	match, stop := cur.check(d)
 	if stop {
