@@ -5,15 +5,15 @@ import (
 )
 
 type Document struct {
-	*store
+	*varStore
 }
 
 func newDocument(ptr unsafe.Pointer) *Document {
 	return &Document{
-		store: newStore(ptr),
+		varStore: newVarStore(ptr),
 	}
 }
 
 func (d *Document) Destroy() {
-	sp_close(d.ptr)
+	spDestroy(d.ptr)
 }

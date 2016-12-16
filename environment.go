@@ -7,23 +7,22 @@ import (
 
 const errorPath = "sophia.error"
 
-// TODO :: memory leak, SetString, GetString, SetInt GetInt
 // Environment is used to configure the database before opening.
 type Environment struct {
-	*store
+	*varStore
 }
 
 // NewEnvironment creates a new environment for opening a database.
 // Receivers must call Close() on the returned Environment.
 func NewEnvironment() (*Environment, error) {
-	ptr := sp_env()
+	ptr := spEnv()
 	if ptr == nil {
 		return nil, errors.New("sp_env failed")
 	}
-	return &Environment{store: newStore(ptr)}, nil
+	return &Environment{varStore: newVarStore(ptr)}, nil
 }
 
-func (env *Environment) NewDatabase(name string, schema *Schema) (*Database, error) {
+func (env *Environment) NewDatabase(name string, schema *Schema) (Database, error) {
 	if !env.SetString("db", name) {
 		return nil, errors.New("failed create database")
 	}
@@ -41,9 +40,11 @@ func (env *Environment) NewDatabase(name string, schema *Schema) (*Database, err
 	if db == nil {
 		return nil, errors.New("failed get database")
 	}
-	return &Database{
-		env:    env,
-		ptr:    db,
+	return &database{
+		dataStore: &dataStore{
+			env: env,
+			ptr: db,
+		},
 		name:   name,
 		schema: schema,
 	}, nil
@@ -52,22 +53,32 @@ func (env *Environment) NewDatabase(name string, schema *Schema) (*Database, err
 // Close closes the environment and frees its associated memory. You must call
 // Close on any Environment created with NewEnvironment.
 func (env *Environment) Close() error {
-	return sp_close(env.ptr)
+	env.Free()
+	return spDestroy(env.ptr)
 }
 
-// Opens environment
+// Open opens environment
 // At a minimum path must be specified and one db declared
 func (env *Environment) Open() bool {
-	return sp_open(env.ptr)
+	return spOpen(env.ptr)
 }
 
 func (env *Environment) Error() error {
 	var size int
-	err := sp_getstring(env.ptr, errorPath, &size)
+	err := spGetString(env.ptr, errorPath, &size)
 	if err != nil {
 		str := goString(err)
 		free(err)
 		return errors.New(str)
 	}
 	return nil
+}
+
+func (env *Environment) BeginTx() Transaction {
+	return &transaction{
+		dataStore: &dataStore{
+			env: env,
+			ptr: spBegin(env.ptr),
+		},
+	}
 }

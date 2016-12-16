@@ -5,10 +5,10 @@ import (
 	"unsafe"
 )
 
-// store manages memory allocation and free for C variables
-// Interface for sophia object
+// varStore manages memory allocation and free for C variables
+// Interface for C sophia object
 // Only for internal usage
-type store struct {
+type varStore struct {
 	// ptr Pointer to C sophia object
 	ptr unsafe.Pointer
 
@@ -17,15 +17,15 @@ type store struct {
 	pointers []unsafe.Pointer
 }
 
-func newStore(ptr unsafe.Pointer) *store {
-	return &store{
+func newVarStore(ptr unsafe.Pointer) *varStore {
+	return &varStore{
 		ptr:      ptr,
 		pointers: make([]unsafe.Pointer, 0),
 	}
 }
 
 // TODO :: implement another types
-func (s *store) Set(path string, val interface{}) bool {
+func (s *varStore) Set(path string, val interface{}) bool {
 	v := reflect.ValueOf(val)
 
 	switch v.Kind() {
@@ -40,42 +40,42 @@ func (s *store) Set(path string, val interface{}) bool {
 	cPath := cString(path)
 	s.pointers = append(s.pointers, unsafe.Pointer(cPath))
 	size := int(reflect.TypeOf(val).Size())
-	return sp_setstring(s.ptr, cPath, (unsafe.Pointer)(reflect.ValueOf(val).Pointer()), size)
+	return spSetString(s.ptr, cPath, (unsafe.Pointer)(reflect.ValueOf(val).Pointer()), size)
 }
 
-func (s *store) SetString(path, val string) bool {
+func (s *varStore) SetString(path, val string) bool {
 	cPath := cString(path)
 	cVal := cString(val)
 	s.pointers = append(s.pointers, unsafe.Pointer(cPath), unsafe.Pointer(cVal))
-	return sp_setstring_s(s.ptr, cPath, cVal, len(val))
+	return spSetString(s.ptr, cPath, unsafe.Pointer(cVal), len(val))
 }
 
-func (s *store) SetInt(path string, val int64) bool {
+func (s *varStore) SetInt(path string, val int64) bool {
 	cPath := cString(path)
 	s.pointers = append(s.pointers, unsafe.Pointer(cPath))
-	return sp_setint(s.ptr, cPath, val)
+	return spSetInt(s.ptr, cPath, val)
 }
 
-func (s *store) Get(path string, size *int) unsafe.Pointer {
-	return sp_getstring(s.ptr, path, size)
+func (s *varStore) Get(path string, size *int) unsafe.Pointer {
+	return spGetString(s.ptr, path, size)
 }
 
-func (s *store) GetString(path string, size *int) string {
-	ptr := sp_getstring(s.ptr, path, size)
+func (s *varStore) GetString(path string, size *int) string {
+	ptr := spGetString(s.ptr, path, size)
 	sh := reflect.StringHeader{Data: uintptr(ptr), Len: *size}
 	return *(*string)(unsafe.Pointer(&sh))
 }
 
-func (s *store) GetObject(path string) unsafe.Pointer {
-	return sp_getobject(s.ptr, path)
+func (s *varStore) GetObject(path string) unsafe.Pointer {
+	return spGetObject(s.ptr, path)
 }
 
-func (s *store) GetInt(key string) int64 {
-	return sp_getint(s.ptr, key)
+func (s *varStore) GetInt(key string) int64 {
+	return spGetInt(s.ptr, key)
 }
 
 // Free frees allocated memory for all C variables, that were in this store
-func (s *store) Free() {
+func (s *varStore) Free() {
 	for _, f := range s.pointers {
 		free(f)
 	}

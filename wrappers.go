@@ -31,38 +31,27 @@ char* pointer_to_string(void* ptr)
 {
 	return (char*)ptr;
 }
-int sp_setstringS(void* obj, char* path, char* val, int size)
-{
-	return sp_setstring(obj, path, (void*)val, size);
-}
 */
 import "C"
 
-type size_t C.size_t
-
-// sp_close closes the pointer and sets it to nil
-// to ensure it cannot be closed twice.
-func sp_close(p unsafe.Pointer) error {
+// spDestroy wrapper for sp_destroy
+// destroys C sophia object
+func spDestroy(p unsafe.Pointer) error {
 	if nil == p {
 		return nil
 	}
 	if 0 != C.sp_destroy(p) {
 		return errors.New("failed close resource")
 	}
-	p = nil
 	return nil
 }
 
-// wrapper for sp_setstring
-func sp_setstring(obj unsafe.Pointer, path *C.char, val unsafe.Pointer, size int) bool {
+// spSetString wrapper for sp_setstring for common cases
+func spSetString(obj unsafe.Pointer, path *C.char, val unsafe.Pointer, size int) bool {
 	return C.sp_setstring(obj, path, val, C.int(size)) == 0
 }
 
-func sp_setstring_s(obj unsafe.Pointer, path *C.char, val *C.char, size int) bool {
-	return C.sp_setstringS(obj, path, val, C.int(size)) == 0
-}
-
-func sp_getstring(obj unsafe.Pointer, path string, size *int) unsafe.Pointer {
+func spGetString(obj unsafe.Pointer, path string, size *int) unsafe.Pointer {
 	cPath := C.CString(path)
 	defer free(unsafe.Pointer(cPath))
 	cSize := C.int(*size)
@@ -71,51 +60,72 @@ func sp_getstring(obj unsafe.Pointer, path string, size *int) unsafe.Pointer {
 	return ptr
 }
 
-func sp_setint(obj unsafe.Pointer, path *C.char, val int64) bool {
+// spSetInt wrapper for sp_setint
+func spSetInt(obj unsafe.Pointer, path *C.char, val int64) bool {
 	return C.sp_setint(obj, path, C.int64_t(val)) == 0
 }
 
-func sp_getint(obj unsafe.Pointer, path string) int64 {
+// spGetInt wrapper for sp_getint
+func spGetInt(obj unsafe.Pointer, path string) int64 {
 	cPath := C.CString(path)
 	ptr := C.sp_getint(obj, cPath)
 	return *(*int64)(unsafe.Pointer(&ptr))
 }
 
-func sp_getobject(obj unsafe.Pointer, path string) unsafe.Pointer {
+// spGetObject wrapper for sp_getobject
+func spGetObject(obj unsafe.Pointer, path string) unsafe.Pointer {
 	cPath := C.CString(path)
 	return unsafe.Pointer(C.sp_getobject(obj, cPath))
 }
 
-func sp_open(ptr unsafe.Pointer) bool {
+// spOpen wrapper for sp_open
+func spOpen(ptr unsafe.Pointer) bool {
 	return C.sp_open(ptr) == 0
 }
 
-func sp_env() unsafe.Pointer {
+// spEnv wrapper for sp_env
+func spEnv() unsafe.Pointer {
 	return unsafe.Pointer(C.sp_env())
 }
 
-func sp_cursor(ptr unsafe.Pointer) unsafe.Pointer {
+// spCursor wrapper for sp_cursor
+func spCursor(ptr unsafe.Pointer) unsafe.Pointer {
 	return unsafe.Pointer(C.sp_cursor(ptr))
 }
 
-func sp_document(ptr unsafe.Pointer) unsafe.Pointer {
+// spDocument wrapper for sp_document
+func spDocument(ptr unsafe.Pointer) unsafe.Pointer {
 	return unsafe.Pointer(C.sp_document(ptr))
 }
 
-func sp_get(ptr1, ptr2 unsafe.Pointer) unsafe.Pointer {
-	return unsafe.Pointer(C.sp_get(ptr1, ptr2))
+// spGet wrapper for sp_get
+func spGet(obj, doc unsafe.Pointer) unsafe.Pointer {
+	return unsafe.Pointer(C.sp_get(obj, doc))
 }
 
-func sp_set(ptr1, ptr2 unsafe.Pointer) bool {
-	return C.sp_set(ptr1, ptr2) == 0
+// spSet wrapper for sp_set
+func spSet(obj, doc unsafe.Pointer) bool {
+	return C.sp_set(obj, doc) == 0
 }
 
-func sp_upsert(ptr1, ptr2 unsafe.Pointer) bool {
-	return C.sp_upsert(ptr1, ptr2) == 0
+// spUpsert wrapper for sp_upsert
+func spUpsert(obj, doc unsafe.Pointer) bool {
+	return C.sp_upsert(obj, doc) == 0
 }
 
-func sp_delete(ptr1, ptr2 unsafe.Pointer) bool {
-	return C.sp_delete(ptr1, ptr2) == 0
+// spDelete wrapper for sp_delete
+func spDelete(obj, doc unsafe.Pointer) bool {
+	return C.sp_delete(obj, doc) == 0
+}
+
+// spCommit wrapper for sp_commit
+func spCommit(tx unsafe.Pointer) int {
+	return int(C.sp_commit(tx))
+}
+
+// spBegin wrapper for sp_begin
+func spBegin(env unsafe.Pointer) unsafe.Pointer {
+	return unsafe.Pointer(C.sp_begin(env))
 }
 
 func free(ptr unsafe.Pointer) {

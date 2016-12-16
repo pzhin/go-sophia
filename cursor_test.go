@@ -31,8 +31,8 @@ func initDB() {
 	env.SetString("sophia.path", DBPath)
 
 	schema := &Schema{}
-	schema.AddKey("key", FieldType_String)
-	schema.AddValue("value", FieldType_String)
+	schema.AddKey("key", FieldTypeString)
+	schema.AddValue("value", FieldTypeString)
 
 	db, _ := env.NewDatabase(DBName, schema)
 	env.Open()
@@ -62,8 +62,8 @@ func testCursorMatch(t *testing.T) {
 	env.SetString("sophia.path", DBPath)
 
 	schema := &Schema{}
-	schema.AddKey("key", FieldType_String)
-	schema.AddValue("value", FieldType_String)
+	schema.AddKey("key", FieldTypeString)
+	schema.AddValue("value", FieldTypeString)
 
 	db, err := env.NewDatabase(DBName, schema)
 	require.Nil(t, err)
@@ -97,8 +97,8 @@ func testCursorRange(t *testing.T) {
 	env.SetString("sophia.path", DBPath)
 
 	schema := &Schema{}
-	schema.AddKey("key", FieldType_String)
-	schema.AddValue("value", FieldType_String)
+	schema.AddKey("key", FieldTypeString)
+	schema.AddValue("value", FieldTypeString)
 
 	db, err := env.NewDatabase(DBName, schema)
 	require.Nil(t, err)

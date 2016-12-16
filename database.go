@@ -2,19 +2,24 @@ package sophia
 
 import (
 	"fmt"
-	"unsafe"
 )
 
+type Database interface {
+	DataStore
+	Document() (doc *Document)
+	Cursor(criteria CursorCriteria) (Cursor, error)
+}
+
 // Database is used for accessing a database.
-type Database struct {
-	ptr    unsafe.Pointer
-	env    *Environment
+type database struct {
+	*dataStore
 	name   string
 	schema *Schema
 }
 
-func (db *Database) Document() (doc *Document) {
-	ptr := sp_document(db.ptr)
+// Document creates a Document for a single or multi-statement transactions
+func (db *database) Document() (doc *Document) {
+	ptr := spDocument(db.ptr)
 	if ptr == nil {
 		return
 	}
@@ -22,43 +27,9 @@ func (db *Database) Document() (doc *Document) {
 	return
 }
 
-// Get retrieves the value for the key.
-func (db *Database) Get(doc *Document) (*Document, error) {
-	ptr := sp_get(db.ptr, doc.ptr)
-	if ptr == nil {
-		return nil, fmt.Errorf("failed Get document: err=%v", db.env.Error())
-	}
-	return newDocument(ptr), nil
-}
-
-// Set sets the value of the key.
-func (db *Database) Set(doc *Document) error {
-	if !sp_set(db.ptr, doc.ptr) {
-		return fmt.Errorf("failed Set document: err=%v", db.env.Error())
-	}
-	return nil
-}
-
-// Set sets the value of the key.
-func (db *Database) Upsert(doc *Document) error {
-	panic("not supported yet")
-	if !sp_upsert(db.ptr, doc.ptr) {
-		return fmt.Errorf("failed Upsert document: err=%v", db.env.Error())
-	}
-	return nil
-}
-
-// Delete deletes the key from the database.
-func (db *Database) Delete(doc *Document) error {
-	if !sp_delete(db.ptr, doc.ptr) {
-		return fmt.Errorf("failed Delete document: err=%v", db.env.Error())
-	}
-	return nil
-}
-
 // Cursor returns a Cursor for iterating over rows in the database
-func (db *Database) Cursor(criteria CursorCriteria) (*cursor, error) {
-	cPtr := sp_cursor(db.env.ptr)
+func (db *database) Cursor(criteria CursorCriteria) (Cursor, error) {
+	cPtr := spCursor(db.env.ptr)
 	if nil == cPtr {
 		return nil, fmt.Errorf("failed create cursor: err=%v", db.env.Error())
 	}

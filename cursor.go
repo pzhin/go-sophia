@@ -52,7 +52,7 @@ func (cur *cursor) Close() error {
 	}
 	cur.doc.Free()
 	cur.closed = true
-	return sp_close(cur.ptr)
+	return spDestroy(cur.ptr)
 }
 
 // Next fetches the next row for the cursor
@@ -61,7 +61,7 @@ func (cur *cursor) Next() *Document {
 	if cur.closed {
 		return nil
 	}
-	ptr := sp_get(cur.ptr, cur.doc.ptr)
+	ptr := spGet(cur.ptr, cur.doc.ptr)
 	if ptr == nil {
 		return nil
 	}

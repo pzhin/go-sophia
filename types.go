@@ -1,29 +1,30 @@
 package sophia
 
+// FieldType type of key or value in a row
 type FieldType int
 
 const (
-	FieldType_UInt8 FieldType = iota
-	FieldType_UInt16
-	FieldType_UInt32
-	FieldType_UInt64
-	FieldType_UInt8Rev
-	FieldType_UInt16Rev
-	FieldType_UInt32Rev
-	FieldType_UInt64Rev
-	FieldType_String
+	FieldTypeUInt8 FieldType = iota
+	FieldTypeUInt16
+	FieldTypeUInt32
+	FieldTypeUInt64
+	FieldTypeUInt8Rev
+	FieldTypeUInt16Rev
+	FieldTypeUInt32Rev
+	FieldTypeUInt64Rev
+	FieldTypeString
 )
 
 var fieldTypeNames = map[FieldType]string{
-	FieldType_UInt8:     "u8",
-	FieldType_UInt16:    "u16",
-	FieldType_UInt32:    "u32",
-	FieldType_UInt64:    "u64",
-	FieldType_UInt8Rev:  "u8rev",
-	FieldType_UInt16Rev: "u16rev",
-	FieldType_UInt32Rev: "u32rev",
-	FieldType_UInt64Rev: "u64rev",
-	FieldType_String:    "string",
+	FieldTypeUInt8:     "u8",
+	FieldTypeUInt16:    "u16",
+	FieldTypeUInt32:    "u32",
+	FieldTypeUInt64:    "u64",
+	FieldTypeUInt8Rev:  "u8rev",
+	FieldTypeUInt16Rev: "u16rev",
+	FieldTypeUInt32Rev: "u32rev",
+	FieldTypeUInt64Rev: "u64rev",
+	FieldTypeString:    "string",
 }
 
 func (t *FieldType) String() string {

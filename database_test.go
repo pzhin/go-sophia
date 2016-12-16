@@ -35,7 +35,7 @@ func TestSophiaDatabaseCRUD(t *testing.T) {
 	defer os.RemoveAll(DBPath)
 	var (
 		env *Environment
-		db  *Database
+		db  Database
 	)
 
 	if !t.Run("New Environment", func(t *testing.T) { env = testNewEnvironment(t) }) {
@@ -44,18 +44,17 @@ func TestSophiaDatabaseCRUD(t *testing.T) {
 	defer func() { require.Nil(t, env.Close()) }()
 
 	if !t.Run("New Database", func(t *testing.T) { db = testNewDatabase(t, env) }) {
-		t.Fatal("Failed to create database object")
+		t.Fatalf("Failed to create database object: %v", env.Error())
 	}
 
 	if !t.Run("Set", func(t *testing.T) { testSet(t, db) }) {
-		t.Fatal("Set operations are failed")
+		t.Fatalf("Set operations are failed: %v", env.Error())
 	}
-
 	if !t.Run("Get", func(t *testing.T) { testGet(t, db) }) {
-		t.Fatal("Get operations are failed")
+		t.Fatalf("Get operations are failed: %v", env.Error())
 	}
 	if !t.Run("Detele", func(t *testing.T) { testDelete(t, db) }) {
-		t.Fatal("Delete operations are failed")
+		t.Fatalf("FDelete operations are failed: %v", env.Error())
 	}
 }
 
@@ -66,12 +65,12 @@ func testNewEnvironment(t *testing.T) *Environment {
 	return env
 }
 
-func testNewDatabase(t *testing.T, env *Environment) *Database {
+func testNewDatabase(t *testing.T, env *Environment) Database {
 	require.True(t, env.Set("sophia.path", DBPath))
 
 	schema := &Schema{}
-	require.Nil(t, schema.AddKey("key", FieldType_String))
-	require.Nil(t, schema.AddValue("value", FieldType_String))
+	require.Nil(t, schema.AddKey("key", FieldTypeString))
+	require.Nil(t, schema.AddValue("value", FieldTypeString))
 
 	db, err := env.NewDatabase(DBName, schema)
 	require.Nil(t, err)
@@ -80,7 +79,7 @@ func testNewDatabase(t *testing.T, env *Environment) *Database {
 	return db
 }
 
-func testSet(t *testing.T, db *Database) {
+func testSet(t *testing.T, db Database) {
 	for i := 0; i < RecordsCount; i++ {
 		doc := db.Document()
 		require.True(t, doc.Set("key", fmt.Sprintf(KeyTemplate, i)))
@@ -91,7 +90,7 @@ func testSet(t *testing.T, db *Database) {
 	}
 }
 
-func testGet(t *testing.T, db *Database) {
+func testGet(t *testing.T, db Database) {
 	for i := 0; i < RecordsCount; i++ {
 		doc := db.Document()
 		require.NotNil(t, doc)
@@ -108,7 +107,7 @@ func testGet(t *testing.T, db *Database) {
 	}
 }
 
-func testDelete(t *testing.T, db *Database) {
+func testDelete(t *testing.T, db Database) {
 	for i := 0; i < RecordsCount; i++ {
 		doc := db.Document()
 		require.NotNil(t, doc)
@@ -138,8 +137,8 @@ func TestSetIntKV(t *testing.T) {
 	require.True(t, env.Set("sophia.path", DBPath))
 
 	schema := &Schema{}
-	require.Nil(t, schema.AddKey("key", FieldType_UInt32))
-	require.Nil(t, schema.AddValue("value", FieldType_UInt32))
+	require.Nil(t, schema.AddKey("key", FieldTypeUInt32))
+	require.Nil(t, schema.AddValue("value", FieldTypeUInt32))
 
 	db, err := env.NewDatabase(DBName, schema)
 	require.Nil(t, err)
@@ -180,10 +179,10 @@ func TestSetMultiKey(t *testing.T) {
 	require.True(t, env.Set("sophia.path", DBPath))
 
 	schema := &Schema{}
-	require.Nil(t, schema.AddKey("key", FieldType_UInt32))
-	require.Nil(t, schema.AddKey("key_j", FieldType_UInt32))
-	require.Nil(t, schema.AddKey("key_k", FieldType_UInt32))
-	require.Nil(t, schema.AddValue("value", FieldType_UInt64))
+	require.Nil(t, schema.AddKey("key", FieldTypeUInt32))
+	require.Nil(t, schema.AddKey("key_j", FieldTypeUInt32))
+	require.Nil(t, schema.AddKey("key_k", FieldTypeUInt32))
+	require.Nil(t, schema.AddValue("value", FieldTypeUInt64))
 
 	db, err := env.NewDatabase(DBName, schema)
 	require.Nil(t, err)
@@ -242,8 +241,8 @@ func BenchmarkDatabase_Set(b *testing.B) {
 	env.Set("sophia.path", DBPath)
 
 	schema := &Schema{}
-	schema.AddKey("key", FieldType_String)
-	schema.AddValue("value", FieldType_String)
+	schema.AddKey("key", FieldTypeString)
+	schema.AddValue("value", FieldTypeString)
 
 	db, err := env.NewDatabase(DBName, schema)
 	if !assert.Nil(b, err) {
