@@ -1,0 +1,16 @@
+language: go
+sudo: false
+go:
+  - tip
+before_install:
+  - go get github.com/mattn/goveralls
+  - go get github.com/stretchr/testify
+install:
+  - go build -v ./...
+branches:
+  only:
+    - master
+script:
+  - go test -v ./...
+after_success:
+  - $HOME/gopath/bin/goveralls -service=travis-ci

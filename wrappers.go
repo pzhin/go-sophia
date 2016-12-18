@@ -6,10 +6,8 @@ import (
 )
 
 /*
-#cgo LDFLAGS: -lsophia
+#cgo LDFLAGS: -lrt
 #include <sophia.h>
-#include <stdio.h>
-#include <stdlib.h>
 extern void    *sp_env(void);
 extern void    *sp_document(void*);
 extern int      sp_setstring(void*, const char*, const void*, int);
