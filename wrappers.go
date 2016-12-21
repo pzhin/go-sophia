@@ -49,11 +49,9 @@ func spSetString(obj unsafe.Pointer, path *C.char, val unsafe.Pointer, size int)
 	return C.sp_setstring(obj, path, val, C.int(size)) == 0
 }
 
-func spGetString(obj unsafe.Pointer, path string, size *int) unsafe.Pointer {
-	cPath := C.CString(path)
-	defer free(unsafe.Pointer(cPath))
+func spGetString(obj unsafe.Pointer, path *C.char, size *int) unsafe.Pointer {
 	cSize := C.int(*size)
-	ptr := unsafe.Pointer(C.sp_getstring(obj, cPath, &cSize))
+	ptr := unsafe.Pointer(C.sp_getstring(obj, path, &cSize))
 	*size = int(cSize)
 	return ptr
 }
@@ -64,16 +62,14 @@ func spSetInt(obj unsafe.Pointer, path *C.char, val int64) bool {
 }
 
 // spGetInt wrapper for sp_getint
-func spGetInt(obj unsafe.Pointer, path string) int64 {
-	cPath := C.CString(path)
-	ptr := C.sp_getint(obj, cPath)
+func spGetInt(obj unsafe.Pointer, path *C.char) int64 {
+	ptr := C.sp_getint(obj, path)
 	return *(*int64)(unsafe.Pointer(&ptr))
 }
 
 // spGetObject wrapper for sp_getobject
-func spGetObject(obj unsafe.Pointer, path string) unsafe.Pointer {
-	cPath := C.CString(path)
-	return unsafe.Pointer(C.sp_getobject(obj, cPath))
+func spGetObject(obj unsafe.Pointer, path *C.char) unsafe.Pointer {
+	return unsafe.Pointer(C.sp_getobject(obj, path))
 }
 
 // spOpen wrapper for sp_open
@@ -131,8 +127,7 @@ func free(ptr unsafe.Pointer) {
 }
 
 func goString(ptr unsafe.Pointer) string {
-	cStr := C.pointer_to_string(ptr)
-	return C.GoString(cStr)
+	return C.GoString((*C.char)(ptr))
 }
 
 func cString(str string) *C.char {

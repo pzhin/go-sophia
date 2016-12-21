@@ -68,7 +68,7 @@ func testCursorMatch(t *testing.T) {
 	db, err := env.NewDatabase(DBName, schema)
 	require.Nil(t, err)
 	require.NotNil(t, db)
-	require.True(t, env.Open())
+	require.Nil(t, env.Open())
 
 	id := RecordsCount / 2
 
@@ -103,7 +103,7 @@ func testCursorRange(t *testing.T) {
 	db, err := env.NewDatabase(DBName, schema)
 	require.Nil(t, err)
 	require.NotNil(t, db)
-	require.True(t, env.Open())
+	require.Nil(t, env.Open())
 
 	startId := RecordsCount / 4
 	expectedCount := int(math.Floor(RecordsCount / 1.8))

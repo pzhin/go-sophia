@@ -19,12 +19,12 @@ func NewEnvironment() (*Environment, error) {
 	if ptr == nil {
 		return nil, errors.New("sp_env failed")
 	}
-	return &Environment{varStore: newVarStore(ptr)}, nil
+	return &Environment{varStore: newVarStore(ptr, 4)}, nil
 }
 
 func (env *Environment) NewDatabase(name string, schema *Schema) (Database, error) {
 	if !env.SetString("db", name) {
-		return nil, errors.New("failed create database")
+		return nil, fmt.Errorf("failed create database: %v", env.Error())
 	}
 	i := 0
 	for n, typ := range schema.keys {
@@ -35,18 +35,17 @@ func (env *Environment) NewDatabase(name string, schema *Schema) (Database, erro
 	for n, typ := range schema.values {
 		env.SetString(fmt.Sprintf("db.%s.scheme", name), n)
 		env.SetString(fmt.Sprintf("db.%s.scheme.%s", name, n), typ.String())
+		i++
 	}
 	db := env.GetObject(fmt.Sprintf("db.%s", name))
 	if db == nil {
-		return nil, errors.New("failed get database")
+		return nil, fmt.Errorf("failed get database: %v", env.Error())
 	}
 	return &database{
-		dataStore: &dataStore{
-			env: env,
-			ptr: db,
-		},
-		name:   name,
-		schema: schema,
+		dataStore:   newDataStore(db, env),
+		name:        name,
+		schema:      schema,
+		fieldsCount: i,
 	}, nil
 }
 
@@ -59,13 +58,16 @@ func (env *Environment) Close() error {
 
 // Open opens environment
 // At a minimum path must be specified and one db declared
-func (env *Environment) Open() bool {
-	return spOpen(env.ptr)
+func (env *Environment) Open() error {
+	if !spOpen(env.ptr) {
+		return env.Error()
+	}
+	return nil
 }
 
 func (env *Environment) Error() error {
 	var size int
-	err := spGetString(env.ptr, errorPath, &size)
+	err := spGetString(env.ptr, getCStringFromCache(errorPath), &size)
 	if err != nil {
 		str := goString(err)
 		free(err)
@@ -76,9 +78,6 @@ func (env *Environment) Error() error {
 
 func (env *Environment) BeginTx() Transaction {
 	return &transaction{
-		dataStore: &dataStore{
-			env: env,
-			ptr: spBegin(env.ptr),
-		},
+		dataStore: newDataStore(spBegin(env.ptr), env),
 	}
 }

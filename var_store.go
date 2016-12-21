@@ -17,10 +17,10 @@ type varStore struct {
 	pointers []unsafe.Pointer
 }
 
-func newVarStore(ptr unsafe.Pointer) *varStore {
+func newVarStore(ptr unsafe.Pointer, size int) *varStore {
 	return &varStore{
 		ptr:      ptr,
-		pointers: make([]unsafe.Pointer, 0),
+		pointers: make([]unsafe.Pointer, 0, size),
 	}
 }
 
@@ -37,41 +37,40 @@ func (s *varStore) Set(path string, val interface{}) bool {
 		return s.SetInt(path, int64(v.Uint()))
 	}
 
-	cPath := cString(path)
+	cPath := getCStringFromCache(path)
 	s.pointers = append(s.pointers, unsafe.Pointer(cPath))
 	size := int(reflect.TypeOf(val).Size())
 	return spSetString(s.ptr, cPath, (unsafe.Pointer)(reflect.ValueOf(val).Pointer()), size)
 }
 
 func (s *varStore) SetString(path, val string) bool {
-	cPath := cString(path)
+	cPath := getCStringFromCache(path)
 	cVal := cString(val)
-	s.pointers = append(s.pointers, unsafe.Pointer(cPath), unsafe.Pointer(cVal))
+	s.pointers = append(s.pointers, unsafe.Pointer(cVal))
 	return spSetString(s.ptr, cPath, unsafe.Pointer(cVal), len(val))
 }
 
 func (s *varStore) SetInt(path string, val int64) bool {
-	cPath := cString(path)
-	s.pointers = append(s.pointers, unsafe.Pointer(cPath))
-	return spSetInt(s.ptr, cPath, val)
+	return spSetInt(s.ptr, getCStringFromCache(path), val)
 }
 
 func (s *varStore) Get(path string, size *int) unsafe.Pointer {
-	return spGetString(s.ptr, path, size)
+	return spGetString(s.ptr, getCStringFromCache(path), size)
 }
 
 func (s *varStore) GetString(path string, size *int) string {
-	ptr := spGetString(s.ptr, path, size)
+	ptr := spGetString(s.ptr, getCStringFromCache(path), size)
 	sh := reflect.StringHeader{Data: uintptr(ptr), Len: *size}
 	return *(*string)(unsafe.Pointer(&sh))
 }
 
 func (s *varStore) GetObject(path string) unsafe.Pointer {
-	return spGetObject(s.ptr, path)
+
+	return spGetObject(s.ptr, getCStringFromCache(path))
 }
 
-func (s *varStore) GetInt(key string) int64 {
-	return spGetInt(s.ptr, key)
+func (s *varStore) GetInt(path string) int64 {
+	return spGetInt(s.ptr, getCStringFromCache(path))
 }
 
 // Free frees allocated memory for all C variables, that were in this store

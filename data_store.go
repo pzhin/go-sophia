@@ -17,8 +17,15 @@ type DataStore interface {
 }
 
 type dataStore struct {
-	ptr unsafe.Pointer
-	env *Environment
+	ptr  unsafe.Pointer
+	env  *Environment
+}
+
+func newDataStore(ptr unsafe.Pointer, env *Environment) *dataStore{
+	return &dataStore{
+		ptr: ptr,
+		env: env,
+	}
 }
 
 func (d *dataStore) Get(doc *Document) (*Document, error) {
@@ -26,7 +33,7 @@ func (d *dataStore) Get(doc *Document) (*Document, error) {
 	if ptr == nil {
 		return nil, fmt.Errorf("failed Get document: err=%v", d.env.Error())
 	}
-	return newDocument(ptr), nil
+	return newDocument(ptr, 0), nil
 }
 
 func (d *dataStore) Set(doc *Document) error {

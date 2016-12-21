@@ -65,7 +65,7 @@ func (cur *cursor) Next() *Document {
 	if ptr == nil {
 		return nil
 	}
-	d := newDocument(ptr)
+	d := newDocument(ptr, 0)
 	cur.doc = d
 	match, stop := cur.check(d)
 	if stop {

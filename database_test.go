@@ -75,7 +75,7 @@ func testNewDatabase(t *testing.T, env *Environment) Database {
 	db, err := env.NewDatabase(DBName, schema)
 	require.Nil(t, err)
 	require.NotNil(t, db)
-	require.True(t, env.Open())
+	require.Nil(t, env.Open())
 	return db
 }
 
@@ -143,7 +143,7 @@ func TestSetIntKV(t *testing.T) {
 	db, err := env.NewDatabase(DBName, schema)
 	require.Nil(t, err)
 	require.NotNil(t, db)
-	require.True(t, env.Open())
+	require.Nil(t, env.Open())
 
 	for i := 0; i < RecordsCount; i++ {
 		doc := db.Document()
@@ -187,7 +187,7 @@ func TestSetMultiKey(t *testing.T) {
 	db, err := env.NewDatabase(DBName, schema)
 	require.Nil(t, err)
 	require.NotNil(t, db)
-	require.True(t, env.Open())
+	require.Nil(t, env.Open())
 
 	count := int(math.Pow(RecordsCount, 1/3))
 
@@ -245,16 +245,9 @@ func BenchmarkDatabase_Set(b *testing.B) {
 	schema.AddValue("value", FieldTypeString)
 
 	db, err := env.NewDatabase(DBName, schema)
-	if !assert.Nil(b, err) {
-		b.Fatalf("failed create Database: err=%v", err)
-	}
-	if !assert.NotNil(b, db) {
-		b.Fatal("failed create Database")
-	}
-
-	if !env.Open() {
-		b.Fatal("failed open environment")
-	}
+	require.Nil(b, err)
+	require.NotNil(b, db)
+	require.Nil(b, env.Open())
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

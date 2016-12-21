@@ -13,8 +13,9 @@ type Database interface {
 // Database is used for accessing a database.
 type database struct {
 	*dataStore
-	name   string
-	schema *Schema
+	name        string
+	schema      *Schema
+	fieldsCount int
 }
 
 // Document creates a Document for a single or multi-statement transactions
@@ -23,7 +24,7 @@ func (db *database) Document() (doc *Document) {
 	if ptr == nil {
 		return
 	}
-	doc = newDocument(ptr)
+	doc = newDocument(ptr, db.fieldsCount)
 	return
 }
 

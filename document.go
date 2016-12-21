@@ -8,9 +8,9 @@ type Document struct {
 	*varStore
 }
 
-func newDocument(ptr unsafe.Pointer) *Document {
+func newDocument(ptr unsafe.Pointer, size int) *Document {
 	return &Document{
-		varStore: newVarStore(ptr),
+		varStore: newVarStore(ptr, size),
 	}
 }
 
