@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TODO :: Write test cases with rollback
 func TestSophiaDatabaseTxCRUD(t *testing.T) {
 	defer os.RemoveAll(DBPath)
 	var (

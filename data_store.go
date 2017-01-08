@@ -17,11 +17,11 @@ type DataStore interface {
 }
 
 type dataStore struct {
-	ptr  unsafe.Pointer
-	env  *Environment
+	ptr unsafe.Pointer
+	env *Environment
 }
 
-func newDataStore(ptr unsafe.Pointer, env *Environment) *dataStore{
+func newDataStore(ptr unsafe.Pointer, env *Environment) *dataStore {
 	return &dataStore{
 		ptr: ptr,
 		env: env,

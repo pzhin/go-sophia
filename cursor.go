@@ -7,16 +7,6 @@ import (
 
 type Order string
 
-// Cursor iterates over key-values in a database.
-type Cursor interface {
-	// Next fetches the next row for the cursor
-	// Returns next row if it exists else it will return nil
-	Next() *Document
-	// Close closes cursor
-	// Cursor won't be accessible after this
-	Close() error
-}
-
 const (
 	GreaterThan      Order = ">"
 	GT               Order = GreaterThan
@@ -33,14 +23,22 @@ const (
 	cursorOrder  = "order"
 )
 
+// Cursor iterates over key-values in a database.
+type Cursor interface {
+	// Next fetches the next row for the cursor
+	// Returns next row if it exists else it will return nil
+	Next() *Document
+	// Close closes cursor
+	// Cursor won't be accessible after this
+	Close() error
+}
+
 var ErrClosedCursorUsage = errors.New("cursor is already closed")
 
 // Cursor iterates over key-values in a database.
 type cursor struct {
 	ptr    unsafe.Pointer
 	doc    *Document
-	schema *Schema
-	check  func(d *Document) (match, stop bool)
 	closed bool
 }
 
@@ -67,12 +65,5 @@ func (cur *cursor) Next() *Document {
 	}
 	d := newDocument(ptr, 0)
 	cur.doc = d
-	match, stop := cur.check(d)
-	if stop {
-		return nil
-	}
-	if !match {
-		return cur.Next()
-	}
 	return d
 }
