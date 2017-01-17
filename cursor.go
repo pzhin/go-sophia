@@ -5,8 +5,11 @@ import (
 	"unsafe"
 )
 
+// Order string type of sophia cursor order
 type Order string
 
+// Constants for sophia cursor order
+// They are used while creating cursor to select it's direction
 const (
 	GreaterThan      Order = ">"
 	GT               Order = GreaterThan
@@ -19,8 +22,10 @@ const (
 )
 
 const (
-	cursorPrefix = "prefix"
-	cursorOrder  = "order"
+	// CursorPrefix uses for setting cursor prefix
+	CursorPrefix = "prefix"
+	// CursorOrder uses for setting cursor order
+	CursorOrder  = "order"
 )
 
 // Cursor iterates over key-values in a database.
@@ -33,6 +38,7 @@ type Cursor interface {
 	Close() error
 }
 
+// ErrClosedCursorUsage will be returned in case of closed cursor usage
 var ErrClosedCursorUsage = errors.New("cursor is already closed")
 
 // Cursor iterates over key-values in a database.

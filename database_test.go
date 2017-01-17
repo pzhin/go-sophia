@@ -5,7 +5,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"math"
 )
@@ -32,7 +31,7 @@ const (
 )
 
 func TestSophiaDatabaseCRUD(t *testing.T) {
-	defer os.RemoveAll(DBPath)
+	defer func() { require.Nil(t, os.RemoveAll(DBPath)) }()
 	var (
 		env *Environment
 		db  Database
@@ -128,7 +127,7 @@ func testDelete(t *testing.T, db Database) {
 }
 
 func TestSetIntKV(t *testing.T) {
-	defer os.RemoveAll(DBPath)
+	defer func() { require.Nil(t, os.RemoveAll(DBPath)) }()
 	env, err := NewEnvironment()
 	require.Nil(t, err)
 	require.NotNil(t, env)
@@ -170,7 +169,7 @@ func TestSetIntKV(t *testing.T) {
 }
 
 func TestSetMultiKey(t *testing.T) {
-	defer os.RemoveAll(DBPath)
+	defer func() { require.Nil(t, os.RemoveAll(DBPath)) }()
 	env, err := NewEnvironment()
 	require.Nil(t, err)
 	require.NotNil(t, env)
@@ -229,20 +228,16 @@ func TestSetMultiKey(t *testing.T) {
 }
 
 func BenchmarkDatabase_Set(b *testing.B) {
-	defer os.RemoveAll(DBPath)
+	defer func() { require.Nil(b, os.RemoveAll(DBPath)) }()
 	env, err := NewEnvironment()
-	if !assert.Nil(b, err) {
-		b.Fatalf("failed create environment: err=%v", err)
-	}
-	if !assert.NotNil(b, env) {
-		b.Fatal("failed create environment")
-	}
+	require.Nil(b, err)
+	require.NotNil(b, env)
 
-	env.Set("sophia.path", DBPath)
+	require.True(b, env.Set("sophia.path", DBPath))
 
 	schema := &Schema{}
-	schema.AddKey("key", FieldTypeString)
-	schema.AddValue("value", FieldTypeString)
+	require.Nil(b, schema.AddKey("key", FieldTypeString))
+	require.Nil(b, schema.AddValue("value", FieldTypeString))
 
 	db, err := env.NewDatabase(DBName, schema)
 	require.Nil(b, err)
@@ -252,12 +247,10 @@ func BenchmarkDatabase_Set(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		doc := db.Document()
-		doc.Set("key", fmt.Sprintf(KeyTemplate, i))
-		doc.Set("value", fmt.Sprintf(ValueTemplate, i))
+		require.True(b, doc.Set("key", fmt.Sprintf(KeyTemplate, i)))
+		require.True(b, doc.Set("value", fmt.Sprintf(ValueTemplate, i)))
 		err = db.Set(doc)
-		if !assert.Nil(b, err) {
-			b.Fatalf("failed set: err=%v", err)
-		}
+		require.Nil(b, err)
 		doc.Free()
 	}
 }

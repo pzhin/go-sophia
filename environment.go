@@ -8,6 +8,8 @@ import (
 const errorPath = "sophia.error"
 
 // Environment is used to configure the database before opening.
+// Take it's name from sophia
+// Usually object with same features are called 'database'
 type Environment struct {
 	*varStore
 }

@@ -12,16 +12,16 @@ import (
 func TestCursor(t *testing.T) {
 	dbDir, err := ioutil.TempDir("", "sophia")
 	require.Nil(t, err, "failed to create temp dir for database")
-	defer os.RemoveAll(dbDir)
+	defer func() { require.Nil(t, os.RemoveAll(dbDir)) }()
 	env, err := NewEnvironment()
 	require.Nil(t, err, "failed to create new environment")
-	defer env.Close()
+	defer func() { require.Nil(t, env.Close()) }()
 
 	require.True(t, env.SetString("sophia.path", dbDir))
 
 	schema := &Schema{}
-	schema.AddKey("key", FieldTypeUInt64)
-	schema.AddValue("value", FieldTypeString)
+	require.Nil(t, schema.AddKey("key", FieldTypeUInt64))
+	require.Nil(t, schema.AddValue("value", FieldTypeString))
 
 	db, err := env.NewDatabase(DBName, schema)
 	require.Nil(t, err, "failed to create database")
@@ -29,16 +29,16 @@ func TestCursor(t *testing.T) {
 
 	for i := 0; i < RecordsCount; i++ {
 		doc := db.Document()
-		doc.SetInt("key", int64(i))
-		doc.SetString("value", fmt.Sprintf(ValueTemplate, i))
+		require.True(t, doc.SetInt("key", int64(i)))
+		require.True(t, doc.SetString("value", fmt.Sprintf(ValueTemplate, i)))
 
-		db.Set(doc)
+		require.Nil(t, db.Set(doc))
 		doc.Free()
 	}
 	t.Run("All records", func(t *testing.T) { testCursor(t, db, 0) })
 	t.Run("Half records", func(t *testing.T) { testCursor(t, db, RecordsCount/2) })
 	t.Run("Quater records", func(t *testing.T) { testCursor(t, db, RecordsCount/4) })
-	t.Run("Use closed cursor error", func(t *testing.T){ testCursorError(t, db)})
+	t.Run("Use closed cursor error", func(t *testing.T) { testCursorError(t, db) })
 }
 
 func testCursorError(t *testing.T, db Database) {
@@ -67,7 +67,7 @@ func testCursor(t *testing.T, db Database, start int64) {
 	cursor, err := db.Cursor(doc)
 	require.Nil(t, err)
 	require.NotNil(t, cursor)
-	defer cursor.Close()
+	defer func() { require.Nil(t, cursor.Close()) }()
 
 	var (
 		size    int

@@ -10,7 +10,7 @@ import (
 
 // TODO :: Write test cases with rollback
 func TestSophiaDatabaseTxCRUD(t *testing.T) {
-	defer os.RemoveAll(DBPath)
+	defer func() { require.Nil(t, os.RemoveAll(DBPath)) }()
 	var (
 		env *Environment
 		db  Database

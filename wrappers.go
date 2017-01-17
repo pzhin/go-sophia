@@ -51,7 +51,7 @@ func spSetString(obj unsafe.Pointer, path *C.char, val unsafe.Pointer, size int)
 
 func spGetString(obj unsafe.Pointer, path *C.char, size *int) unsafe.Pointer {
 	cSize := C.int(*size)
-	ptr := unsafe.Pointer(C.sp_getstring(obj, path, &cSize))
+	ptr := C.sp_getstring(obj, path, &cSize)
 	*size = int(cSize)
 	return ptr
 }
@@ -69,7 +69,7 @@ func spGetInt(obj unsafe.Pointer, path *C.char) int64 {
 
 // spGetObject wrapper for sp_getobject
 func spGetObject(obj unsafe.Pointer, path *C.char) unsafe.Pointer {
-	return unsafe.Pointer(C.sp_getobject(obj, path))
+	return C.sp_getobject(obj, path)
 }
 
 // spOpen wrapper for sp_open
@@ -79,22 +79,22 @@ func spOpen(ptr unsafe.Pointer) bool {
 
 // spEnv wrapper for sp_env
 func spEnv() unsafe.Pointer {
-	return unsafe.Pointer(C.sp_env())
+	return C.sp_env()
 }
 
 // spCursor wrapper for sp_cursor
 func spCursor(ptr unsafe.Pointer) unsafe.Pointer {
-	return unsafe.Pointer(C.sp_cursor(ptr))
+	return C.sp_cursor(ptr)
 }
 
 // spDocument wrapper for sp_document
 func spDocument(ptr unsafe.Pointer) unsafe.Pointer {
-	return unsafe.Pointer(C.sp_document(ptr))
+	return C.sp_document(ptr)
 }
 
 // spGet wrapper for sp_get
 func spGet(obj, doc unsafe.Pointer) unsafe.Pointer {
-	return unsafe.Pointer(C.sp_get(obj, doc))
+	return C.sp_get(obj, doc)
 }
 
 // spSet wrapper for sp_set
@@ -119,7 +119,7 @@ func spCommit(tx unsafe.Pointer) int {
 
 // spBegin wrapper for sp_begin
 func spBegin(env unsafe.Pointer) unsafe.Pointer {
-	return unsafe.Pointer(C.sp_begin(env))
+	return C.sp_begin(env)
 }
 
 func free(ptr unsafe.Pointer) {

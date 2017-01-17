@@ -5,6 +5,7 @@ import (
 	"unsafe"
 )
 
+// DataStore provides access to data
 type DataStore interface {
 	// Get retrieves the row for the set of keys.
 	Get(doc *Document) (*Document, error)

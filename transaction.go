@@ -4,7 +4,7 @@ package sophia
 type TxStatus int
 
 const (
-	// TxOk means that transaction has been completed with error
+	// TxError means that transaction has been completed with error
 	TxError TxStatus = -1
 	// TxOk means that transaction has been completed
 	TxOk TxStatus = 0
@@ -15,7 +15,7 @@ const (
 	TxLock TxStatus = 2
 )
 
-// Multi-statement transaction is automatically processed when Set(), Delete(), Upsert(), Get() are used on a transactional object.
+// Transaction multi-statement transaction is automatically processed when Set(), Delete(), Upsert(), Get() are used on a transactional object.
 // The BeginTx() function is used to start a multi-statement transaction.
 // During transaction, no updates are written to the database files until a Commit() is called.
 // On commit, all modifications that were made are written to the log file in a single batch.

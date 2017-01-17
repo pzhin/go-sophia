@@ -4,6 +4,9 @@ import (
 	"fmt"
 )
 
+// Database extends DataStore interface
+// Take it's name from sophia
+// Usually object with same features are called 'table'
 type Database interface {
 	DataStore
 	Document() (doc *Document)
@@ -19,13 +22,12 @@ type database struct {
 }
 
 // Document creates a Document for a single or multi-statement transactions
-func (db *database) Document() (doc *Document) {
+func (db *database) Document() *Document {
 	ptr := spDocument(db.ptr)
 	if ptr == nil {
-		return
+		return nil
 	}
-	doc = newDocument(ptr, db.fieldsCount)
-	return
+	return newDocument(ptr, db.fieldsCount)
 }
 
 // Cursor returns a Cursor for iterating over rows in the database
