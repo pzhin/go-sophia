@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"math"
+	"math/rand"
 )
 
 // TODO write tests:
@@ -28,6 +29,8 @@ const (
 	DBPath       = "sophia"
 	DBName       = "test"
 	RecordsCount = 500000
+
+	RecordsCountBench = 5000000
 )
 
 func TestSophiaDatabaseCRUD(t *testing.T) {
@@ -227,7 +230,8 @@ func TestSetMultiKey(t *testing.T) {
 	}
 }
 
-func BenchmarkDatabase_Set(b *testing.B) {
+// ATTN - This benchmark don't show real performance
+func BenchmarkDatabaseSet(b *testing.B) {
 	defer func() { require.Nil(b, os.RemoveAll(DBPath)) }()
 	env, err := NewEnvironment()
 	require.Nil(b, err)
@@ -244,13 +248,63 @@ func BenchmarkDatabase_Set(b *testing.B) {
 	require.NotNil(b, db)
 	require.Nil(b, env.Open())
 
+	indices := rand.Perm(b.N)
+	keys := make(map[string]string)
+	for _, i := range indices {
+		keys[fmt.Sprintf(KeyTemplate, i)] = fmt.Sprintf(ValueTemplate, i)
+	}
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for key, value := range keys {
+		doc := db.Document()
+		require.True(b, doc.Set("key", key))
+		require.True(b, doc.Set("value", value))
+		require.Nil(b, db.Set(doc))
+		doc.Free()
+	}
+}
+
+// ATTN - This benchmark don't show real performance
+func BenchmarkDatabaseGet(b *testing.B) {
+	defer func() { require.Nil(b, os.RemoveAll(DBPath)) }()
+	env, err := NewEnvironment()
+	require.Nil(b, err)
+	require.NotNil(b, env)
+
+	require.True(b, env.Set("sophia.path", DBPath))
+
+	schema := &Schema{}
+	require.Nil(b, schema.AddKey("key", FieldTypeString))
+	require.Nil(b, schema.AddValue("value", FieldTypeString))
+
+	db, err := env.NewDatabase(DBName, schema)
+	require.Nil(b, err)
+	require.NotNil(b, db)
+	require.Nil(b, env.Open())
+
+	for i := 0; i < RecordsCountBench; i++ {
 		doc := db.Document()
 		require.True(b, doc.Set("key", fmt.Sprintf(KeyTemplate, i)))
 		require.True(b, doc.Set("value", fmt.Sprintf(ValueTemplate, i)))
 		err = db.Set(doc)
 		require.Nil(b, err)
 		doc.Free()
+	}
+
+	indices := rand.Perm(b.N)
+	keys := make(map[string]string)
+	for _, i := range indices {
+		keys[fmt.Sprintf(KeyTemplate, i)] = fmt.Sprintf(ValueTemplate, i)
+	}
+	var size int
+	b.ResetTimer()
+	for key, value := range keys {
+		doc := db.Document()
+		require.True(b, doc.Set("key", key))
+		d, err := db.Get(doc)
+		require.Nil(b, err)
+		require.Equal(b, value, d.GetString("value", &size))
+		doc.Free()
+		d.Free()
+		d.Destroy()
 	}
 }
