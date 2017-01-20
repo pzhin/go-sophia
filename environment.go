@@ -24,7 +24,7 @@ func NewEnvironment() (*Environment, error) {
 	return &Environment{varStore: newVarStore(ptr, 4)}, nil
 }
 
-func (env *Environment) NewDatabase(name string, schema *Schema) (Database, error) {
+func (env *Environment) NewDatabase(name string, schema *Schema) (*Database, error) {
 	if !env.SetString("db", name) {
 		return nil, fmt.Errorf("failed create database: %v", env.Error())
 	}
@@ -43,7 +43,7 @@ func (env *Environment) NewDatabase(name string, schema *Schema) (Database, erro
 	if db == nil {
 		return nil, fmt.Errorf("failed get database: %v", env.Error())
 	}
-	return &database{
+	return &Database{
 		dataStore:   newDataStore(db, env),
 		name:        name,
 		schema:      schema,
@@ -78,8 +78,8 @@ func (env *Environment) Error() error {
 	return nil
 }
 
-func (env *Environment) BeginTx() Transaction {
-	return &transaction{
+func (env *Environment) BeginTx() *Transaction {
+	return &Transaction{
 		dataStore: newDataStore(spBegin(env.ptr), env),
 	}
 }

@@ -12,7 +12,7 @@ func TestSophiaDatabaseTx(t *testing.T) {
 	defer func() { require.Nil(t, os.RemoveAll(DBPath)) }()
 	var (
 		env *Environment
-		db  Database
+		db  *Database
 	)
 
 	if !t.Run("New Environment", func(t *testing.T) { env = testNewEnvironment(t) }) {
@@ -33,7 +33,7 @@ func TestSophiaDatabaseTx(t *testing.T) {
 	t.Run("Concurrent Tx", func(t *testing.T) { testConcurrentTx(t, env, db) })
 }
 
-func testSetTx(t *testing.T, tx Transaction, db Database) {
+func testSetTx(t *testing.T, tx *Transaction, db *Database) {
 	for i := 0; i < RecordsCount; i++ {
 		doc := db.Document()
 		require.True(t, doc.Set("key", fmt.Sprintf(KeyTemplate, i)))
@@ -45,7 +45,7 @@ func testSetTx(t *testing.T, tx Transaction, db Database) {
 	require.Equal(t, TxOk, tx.Commit())
 }
 
-func testGetTx(t *testing.T, tx Transaction, db Database) {
+func testGetTx(t *testing.T, tx *Transaction, db *Database) {
 	for i := 0; i < RecordsCount; i++ {
 		doc := db.Document()
 		require.NotNil(t, doc)
@@ -63,7 +63,7 @@ func testGetTx(t *testing.T, tx Transaction, db Database) {
 	require.Equal(t, TxOk, tx.Commit())
 }
 
-func testDeleteTx(t *testing.T, tx Transaction, db Database) {
+func testDeleteTx(t *testing.T, tx *Transaction, db *Database) {
 	for i := 0; i < RecordsCount; i++ {
 		doc := db.Document()
 		require.NotNil(t, doc)
@@ -84,7 +84,7 @@ func testDeleteTx(t *testing.T, tx Transaction, db Database) {
 	require.Equal(t, TxOk, tx.Commit())
 }
 
-func testTxRollback(t *testing.T, env *Environment, db Database){
+func testTxRollback(t *testing.T, env *Environment, db *Database) {
 	tx := env.BeginTx()
 
 	for i := 0; i < RecordsCount; i++ {
@@ -108,7 +108,7 @@ func testTxRollback(t *testing.T, env *Environment, db Database){
 	}
 }
 
-func testConcurrentTx(t *testing.T, env *Environment, db Database){
+func testConcurrentTx(t *testing.T, env *Environment, db *Database) {
 	for i := 0; i < RecordsCount; i++ {
 		doc := db.Document()
 		require.True(t, doc.Set("key", fmt.Sprintf(KeyTemplate, i)))

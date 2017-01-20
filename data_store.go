@@ -1,37 +1,20 @@
 package sophia
 
 import (
+	"errors"
 	"fmt"
 	"unsafe"
-	"errors"
 )
-
-// DataStore provides access to data
-type DataStore interface {
-	// Get retrieves the row for the set of keys.
-	Get(doc *Document) (*Document, error)
-	// Set sets the row of the set of keys.
-	Set(doc *Document) error
-	// Upsert sets the row of the set of keys.
-	Upsert(doc *Document) error
-	// Delete deletes row with specified set of keys.
-	Delete(doc *Document) error
-}
 
 var ErrNotFound = errors.New("document not found")
 
+// DataStore provides access to data
 type dataStore struct {
 	ptr unsafe.Pointer
 	env *Environment
 }
 
-func newDataStore(ptr unsafe.Pointer, env *Environment) *dataStore {
-	return &dataStore{
-		ptr: ptr,
-		env: env,
-	}
-}
-
+// Get retrieves the row for the set of keys.
 func (d *dataStore) Get(doc *Document) (*Document, error) {
 	ptr := spGet(d.ptr, doc.ptr)
 	if ptr == nil {
@@ -44,6 +27,7 @@ func (d *dataStore) Get(doc *Document) (*Document, error) {
 	return newDocument(ptr, 0), nil
 }
 
+// Set sets the row of the set of keys.
 func (d *dataStore) Set(doc *Document) error {
 	if !spSet(d.ptr, doc.ptr) {
 		return fmt.Errorf("failed Set document: err=%v", d.env.Error())
@@ -51,6 +35,7 @@ func (d *dataStore) Set(doc *Document) error {
 	return nil
 }
 
+// Upsert sets the row of the set of keys.
 func (d *dataStore) Upsert(doc *Document) error {
 	panic("not supported yet")
 	if !spUpsert(d.ptr, doc.ptr) {
@@ -59,9 +44,17 @@ func (d *dataStore) Upsert(doc *Document) error {
 	return nil
 }
 
+// Delete deletes row with specified set of keys.
 func (d *dataStore) Delete(doc *Document) error {
 	if !spDelete(d.ptr, doc.ptr) {
 		return fmt.Errorf("failed Delete document: err=%v", d.env.Error())
 	}
 	return nil
+}
+
+func newDataStore(ptr unsafe.Pointer, env *Environment) *dataStore {
+	return &dataStore{
+		ptr: ptr,
+		env: env,
+	}
 }

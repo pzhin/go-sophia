@@ -37,7 +37,7 @@ func TestSophiaDatabaseCRUD(t *testing.T) {
 	defer func() { require.Nil(t, os.RemoveAll(DBPath)) }()
 	var (
 		env *Environment
-		db  Database
+		db  *Database
 	)
 
 	if !t.Run("New Environment", func(t *testing.T) { env = testNewEnvironment(t) }) {
@@ -67,7 +67,7 @@ func testNewEnvironment(t *testing.T) *Environment {
 	return env
 }
 
-func testNewDatabase(t *testing.T, env *Environment) Database {
+func testNewDatabase(t *testing.T, env *Environment) *Database {
 	require.True(t, env.Set("sophia.path", DBPath))
 
 	schema := &Schema{}
@@ -81,7 +81,7 @@ func testNewDatabase(t *testing.T, env *Environment) Database {
 	return db
 }
 
-func testSet(t *testing.T, db Database) {
+func testSet(t *testing.T, db *Database) {
 	for i := 0; i < RecordsCount; i++ {
 		doc := db.Document()
 		require.True(t, doc.Set("key", fmt.Sprintf(KeyTemplate, i)))
@@ -92,7 +92,7 @@ func testSet(t *testing.T, db Database) {
 	}
 }
 
-func testGet(t *testing.T, db Database) {
+func testGet(t *testing.T, db *Database) {
 	for i := 0; i < RecordsCount; i++ {
 		doc := db.Document()
 		require.NotNil(t, doc)
@@ -109,7 +109,7 @@ func testGet(t *testing.T, db Database) {
 	}
 }
 
-func testDelete(t *testing.T, db Database) {
+func testDelete(t *testing.T, db *Database) {
 	for i := 0; i < RecordsCount; i++ {
 		doc := db.Document()
 		require.NotNil(t, doc)

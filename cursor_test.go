@@ -41,7 +41,7 @@ func TestCursor(t *testing.T) {
 	t.Run("Use closed cursor error", func(t *testing.T) { testCursorError(t, db) })
 }
 
-func testCursorError(t *testing.T, db Database) {
+func testCursorError(t *testing.T, db *Database) {
 	doc := db.Document()
 	require.NotNil(t, doc)
 
@@ -56,7 +56,7 @@ func testCursorError(t *testing.T, db Database) {
 	require.Nil(t, cursor.Next())
 }
 
-func testCursor(t *testing.T, db Database, start int64) {
+func testCursor(t *testing.T, db *Database, start int64) {
 	id := start
 	doc := db.Document()
 	require.NotNil(t, doc)

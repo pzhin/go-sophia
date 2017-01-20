@@ -23,23 +23,17 @@ const (
 // No nested transactions are supported.
 // There are no limit on a number of concurrent transactions.
 // Any number of databases can be involved in a multi-statement transaction.
-type Transaction interface {
-	DataStore
-	// Commit commits the transaction and returns it's status.
-	// Any error happened during multi-statement transaction does not rollback a transaction.
-	Commit() TxStatus
-	// Rollback rollbacks transaction and destroy transaction object.
-	Rollback() error
-}
-
-type transaction struct {
+type Transaction struct {
 	*dataStore
 }
 
-func (tx *transaction) Commit() TxStatus {
+// Commit commits the transaction and returns it's status.
+// Any error happened during multi-statement transaction does not rollback a transaction.
+func (tx *Transaction) Commit() TxStatus {
 	return TxStatus(spCommit(tx.ptr))
 }
 
-func (tx *transaction) Rollback() error {
+// Rollback rollbacks transaction and destroy transaction object.
+func (tx *Transaction) Rollback() error {
 	return spDestroy(tx.ptr)
 }
