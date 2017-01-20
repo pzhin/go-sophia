@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestSophiaDatabaseTxCRUD(t *testing.T) {
+func TestSophiaDatabaseTx(t *testing.T) {
 	defer func() { require.Nil(t, os.RemoveAll(DBPath)) }()
 	var (
 		env *Environment
@@ -27,12 +27,10 @@ func TestSophiaDatabaseTxCRUD(t *testing.T) {
 	if !t.Run("Set", func(t *testing.T) { testSetTx(t, env.BeginTx(), db) }) {
 		t.Fatal("Set operations are failed")
 	}
-	if !t.Run("Get", func(t *testing.T) { testGetTx(t, env.BeginTx(), db) }) {
-		t.Fatal("Get operations are failed")
-	}
-	if !t.Run("Detele", func(t *testing.T) { testDeleteTx(t, env.BeginTx(), db) }) {
-		t.Fatal("Delete operations are failed")
-	}
+	t.Run("Get", func(t *testing.T) { testGetTx(t, env.BeginTx(), db) })
+	t.Run("Detele", func(t *testing.T) { testDeleteTx(t, env.BeginTx(), db) })
+	t.Run("Tx rollback", func(t *testing.T) { testTxRollback(t, env, db) })
+	t.Run("Concurrent Tx", func(t *testing.T) { testConcurrentTx(t, env, db) })
 }
 
 func testSetTx(t *testing.T, tx Transaction, db Database) {
@@ -86,22 +84,7 @@ func testDeleteTx(t *testing.T, tx Transaction, db Database) {
 	require.Equal(t, TxOk, tx.Commit())
 }
 
-func TestSophiaDatabaseTxRollback(t *testing.T){
-	defer func() { require.Nil(t, os.RemoveAll(DBPath)) }()
-	var (
-		env *Environment
-		db  Database
-	)
-
-	if !t.Run("New Environment", func(t *testing.T) { env = testNewEnvironment(t) }) {
-		t.Fatal("Failed to create environment object")
-	}
-	defer func() { require.Nil(t, env.Close()) }()
-
-	if !t.Run("New Database", func(t *testing.T) { db = testNewDatabase(t, env) }) {
-		t.Fatal("Failed to create database object")
-	}
-
+func testTxRollback(t *testing.T, env *Environment, db Database){
 	tx := env.BeginTx()
 
 	for i := 0; i < RecordsCount; i++ {
@@ -125,22 +108,7 @@ func TestSophiaDatabaseTxRollback(t *testing.T){
 	}
 }
 
-func TestSophiaDatabaseConcurrentTx(t *testing.T){
-	defer func() { require.Nil(t, os.RemoveAll(DBPath)) }()
-	var (
-		env *Environment
-		db  Database
-	)
-
-	if !t.Run("New Environment", func(t *testing.T) { env = testNewEnvironment(t) }) {
-		t.Fatal("Failed to create environment object")
-	}
-	defer func() { require.Nil(t, env.Close()) }()
-
-	if !t.Run("New Database", func(t *testing.T) { db = testNewDatabase(t, env) }) {
-		t.Fatal("Failed to create database object")
-	}
-
+func testConcurrentTx(t *testing.T, env *Environment, db Database){
 	for i := 0; i < RecordsCount; i++ {
 		doc := db.Document()
 		require.True(t, doc.Set("key", fmt.Sprintf(KeyTemplate, i)))
