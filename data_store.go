@@ -3,6 +3,7 @@ package sophia
 import (
 	"fmt"
 	"unsafe"
+	"errors"
 )
 
 // DataStore provides access to data
@@ -16,6 +17,8 @@ type DataStore interface {
 	// Delete deletes row with specified set of keys.
 	Delete(doc *Document) error
 }
+
+var ErrNotFound = errors.New("document not found")
 
 type dataStore struct {
 	ptr unsafe.Pointer
@@ -32,7 +35,11 @@ func newDataStore(ptr unsafe.Pointer, env *Environment) *dataStore {
 func (d *dataStore) Get(doc *Document) (*Document, error) {
 	ptr := spGet(d.ptr, doc.ptr)
 	if ptr == nil {
-		return nil, fmt.Errorf("failed Get document: err=%v", d.env.Error())
+		err := d.env.Error()
+		if err == nil {
+			return nil, ErrNotFound
+		}
+		return nil, fmt.Errorf("failed Get document: err=%v", err)
 	}
 	return newDocument(ptr, 0), nil
 }
