@@ -1,6 +1,7 @@
 package sophia
 
 import (
+	"errors"
 	"fmt"
 )
 
@@ -25,12 +26,12 @@ func (db *Database) Document() *Document {
 
 // Cursor returns a Cursor for iterating over rows in the database
 func (db *Database) Cursor(doc *Document) (Cursor, error) {
+	if nil == doc {
+		return nil, errors.New("failed to create cursor: nil Document")
+	}
 	cPtr := spCursor(db.env.ptr)
 	if nil == cPtr {
-		return nil, fmt.Errorf("failed create cursor: err=%v", db.env.Error())
-	}
-	if nil == doc {
-		return nil, fmt.Errorf("failed get document: err=%v", db.env.Error())
+		return nil, fmt.Errorf("failed to create cursor: err=%v", db.env.Error())
 	}
 	cur := &cursor{
 		ptr: cPtr,

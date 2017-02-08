@@ -1,5 +1,7 @@
 package sophia
 
+import "errors"
+
 // TxStatus transactional status
 type TxStatus int
 
@@ -35,5 +37,8 @@ func (tx *Transaction) Commit() TxStatus {
 
 // Rollback rollbacks transaction and destroy transaction object.
 func (tx *Transaction) Rollback() error {
-	return spDestroy(tx.ptr)
+	if !spDestroy(tx.ptr) {
+		return errors.New("tx: failed to rollback")
+	}
+	return nil
 }

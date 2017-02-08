@@ -65,7 +65,6 @@ func (s *varStore) GetString(path string, size *int) string {
 }
 
 func (s *varStore) GetObject(path string) unsafe.Pointer {
-
 	return spGetObject(s.ptr, getCStringFromCache(path))
 }
 
@@ -74,6 +73,7 @@ func (s *varStore) GetInt(path string) int64 {
 }
 
 // Free frees allocated memory for all C variables, that were in this store
+// This always should be called to prevent memory leaks
 func (s *varStore) Free() {
 	for _, f := range s.pointers {
 		free(f)

@@ -55,7 +55,10 @@ func (env *Environment) NewDatabase(name string, schema *Schema) (*Database, err
 // Close on any Environment created with NewEnvironment.
 func (env *Environment) Close() error {
 	env.Free()
-	return spDestroy(env.ptr)
+	if !spDestroy(env.ptr) {
+		return errors.New("env: failed to close")
+	}
+	return nil
 }
 
 // Open opens environment

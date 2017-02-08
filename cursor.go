@@ -56,7 +56,10 @@ func (cur *cursor) Close() error {
 	}
 	cur.doc.Free()
 	cur.closed = true
-	return spDestroy(cur.ptr)
+	if !spDestroy(cur.ptr) {
+		return errors.New("cursor: failed to close")
+	}
+	return nil
 }
 
 // Next fetches the next row for the cursor
@@ -69,7 +72,6 @@ func (cur *cursor) Next() *Document {
 	if ptr == nil {
 		return nil
 	}
-	d := newDocument(ptr, 0)
-	cur.doc = d
-	return d
+	cur.doc.ptr = ptr
+	return cur.doc
 }

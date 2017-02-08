@@ -1,6 +1,7 @@
 package sophia
 
 import (
+	"errors"
 	"unsafe"
 )
 
@@ -14,6 +15,9 @@ func newDocument(ptr unsafe.Pointer, size int) *Document {
 	}
 }
 
-func (d *Document) Destroy() {
-	spDestroy(d.ptr)
+func (d *Document) Destroy() error {
+	if !spDestroy(d.ptr) {
+		return errors.New("document: failed to destroy")
+	}
+	return nil
 }

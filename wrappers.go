@@ -1,7 +1,6 @@
 package sophia
 
 import (
-	"errors"
 	"unsafe"
 )
 
@@ -25,23 +24,13 @@ extern void    *sp_cursor(void*);
 extern void    *sp_begin(void*);
 extern int      sp_prepare(void*);
 extern int      sp_commit(void*);
-char* pointer_to_string(void* ptr)
-{
-	return (char*)ptr;
-}
 */
 import "C"
 
 // spDestroy wrapper for sp_destroy
 // destroys C sophia object
-func spDestroy(p unsafe.Pointer) error {
-	if nil == p {
-		return nil
-	}
-	if 0 != C.sp_destroy(p) {
-		return errors.New("failed close resource")
-	}
-	return nil
+func spDestroy(p unsafe.Pointer) bool {
+	return C.sp_destroy(p) == 0
 }
 
 // spSetString wrapper for sp_setstring for common cases
