@@ -2,12 +2,12 @@ package sophia
 
 import (
 	"fmt"
+	"math"
+	"math/rand"
 	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"math"
-	"math/rand"
 )
 
 // TODO write tests:
@@ -34,11 +34,11 @@ const (
 )
 
 func TestSophiaDatabaseCRUD(t *testing.T) {
-	defer func() { require.Nil(t, os.RemoveAll(DBPath)) }()
-	var (
-		env *Environment
-		db  *Database
-	)
+	defer func() {
+		require.Nil(t, os.RemoveAll(DBPath))
+	}()
+	var env *Environment
+	var db *Database
 
 	if !t.Run("New Environment", func(t *testing.T) { env = testNewEnvironment(t) }) {
 		t.Fatal("Failed to create environment object")
@@ -105,7 +105,6 @@ func testGet(t *testing.T, db *Database) {
 		require.Equal(t, fmt.Sprintf(KeyTemplate, i), d.GetString("key", &size))
 		require.Equal(t, fmt.Sprintf(ValueTemplate, i), d.GetString("value", &size))
 		d.Destroy()
-		d.Free()
 	}
 }
 
@@ -130,11 +129,15 @@ func testDelete(t *testing.T, db *Database) {
 }
 
 func TestSetIntKV(t *testing.T) {
-	defer func() { require.Nil(t, os.RemoveAll(DBPath)) }()
+	defer func() {
+		require.Nil(t, os.RemoveAll(DBPath))
+	}()
 	env, err := NewEnvironment()
 	require.Nil(t, err)
 	require.NotNil(t, env)
-	defer func() { require.Nil(t, env.Close()) }()
+	defer func() {
+		require.Nil(t, env.Close())
+	}()
 
 	require.True(t, env.Set("sophia.path", DBPath))
 
@@ -228,6 +231,94 @@ func TestSetMultiKey(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestDatabaseUseSomeDocumentsAtTheSameTime(t *testing.T) {
+	defer func() {
+		require.Nil(t, os.RemoveAll(DBPath))
+	}()
+	env, err := NewEnvironment()
+	require.Nil(t, err)
+	require.NotNil(t, env)
+
+	require.True(t, env.Set("sophia.path", DBPath))
+
+	schema := &Schema{}
+	require.Nil(t, schema.AddKey("key", FieldTypeString))
+	require.Nil(t, schema.AddValue("value", FieldTypeString))
+
+	db, err := env.NewDatabase(DBName, schema)
+	require.Nil(t, err)
+	require.NotNil(t, db)
+	require.Nil(t, env.Open())
+
+	doc1 := db.Document()
+	doc2 := db.Document()
+
+	require.NotNil(t, doc1)
+	require.NotNil(t, doc2)
+
+	defer func() {
+		doc1.Free()
+		doc2.Free()
+	}()
+
+	require.True(t, doc1.Set("key", "key1"))
+	require.True(t, doc1.Set("value", "value1"))
+	require.True(t, doc2.Set("key", "key2"))
+	require.True(t, doc2.Set("value", "value2"))
+
+	db.Set(doc1)
+	db.Set(doc2)
+
+	doc := db.Document()
+	require.NotNil(t, doc)
+
+	doc.Set("key", "key1")
+	d, err := db.Get(doc)
+	require.NotNil(t, d)
+	require.Nil(t, err)
+	size := 0
+	require.Equal(t, "value1", d.GetString("value", &size))
+	require.Equal(t, 6, size)
+	d.Destroy()
+
+	doc = db.Document()
+	require.NotNil(t, doc)
+
+	doc.Set("key", "key2")
+	d, err = db.Get(doc)
+	require.NotNil(t, d)
+	require.Nil(t, err)
+	size = 0
+	require.Equal(t, "value2", d.GetString("value", &size))
+	require.Equal(t, 6, size)
+	d.Destroy()
+}
+
+func TestDatabaseDeleteNotExistingKey(t *testing.T) {
+	defer func() {
+		require.Nil(t, os.RemoveAll(DBPath))
+	}()
+	env, err := NewEnvironment()
+	require.Nil(t, err)
+	require.NotNil(t, env)
+
+	require.True(t, env.Set("sophia.path", DBPath))
+
+	schema := &Schema{}
+	require.Nil(t, schema.AddKey("key", FieldTypeString))
+	require.Nil(t, schema.AddValue("value", FieldTypeString))
+
+	db, err := env.NewDatabase(DBName, schema)
+	require.Nil(t, err)
+	require.NotNil(t, db)
+	require.Nil(t, env.Open())
+
+	doc := db.Document()
+	defer doc.Free()
+	doc.Set("key", "key1")
+	require.Nil(t, db.Delete(doc))
 }
 
 // ATTN - This benchmark don't show real performance
