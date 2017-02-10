@@ -33,7 +33,7 @@ const (
 	RecordsCountBench = 5000000
 )
 
-func TestSophiaDatabaseCRUD(t *testing.T) {
+func TestDatabaseCRUD(t *testing.T) {
 	defer func() {
 		require.Nil(t, os.RemoveAll(DBPath))
 	}()
@@ -126,6 +126,58 @@ func testDelete(t *testing.T, db *Database) {
 		require.Nil(t, d)
 		require.NotNil(t, err)
 	}
+}
+
+func TestSchemaDupKey(t *testing.T) {
+	schema := Schema{}
+	keyName := "key"
+	require.Nil(t, schema.AddKey(keyName, FieldTypeString))
+
+	require.Len(t, schema.keys, 1)
+	require.Len(t, schema.keysNames, 1)
+
+	require.Len(t, schema.values, 0)
+	require.Len(t, schema.valuesNames, 0)
+
+	require.Equal(t, FieldTypeString, schema.keys[keyName])
+	require.Equal(t, keyName, schema.keysNames[0])
+
+	require.NotNil(t, schema.AddKey(keyName, FieldTypeString))
+
+	require.Len(t, schema.keys, 1)
+	require.Len(t, schema.keysNames, 1)
+
+	require.Len(t, schema.values, 0)
+	require.Len(t, schema.valuesNames, 0)
+
+	require.Equal(t, FieldTypeString, schema.keys[keyName])
+	require.Equal(t, keyName, schema.keysNames[0])
+}
+
+func TestSchemaDupValue(t *testing.T) {
+	schema := Schema{}
+	valueName := "key"
+	require.Nil(t, schema.AddValue(valueName, FieldTypeString))
+
+	require.Len(t, schema.keys, 0)
+	require.Len(t, schema.keysNames, 0)
+
+	require.Len(t, schema.values, 1)
+	require.Len(t, schema.valuesNames, 1)
+
+	require.Equal(t, FieldTypeString, schema.values[valueName])
+	require.Equal(t, valueName, schema.valuesNames[0])
+
+	require.NotNil(t, schema.AddValue(valueName, FieldTypeString))
+
+	require.Len(t, schema.keys, 0)
+	require.Len(t, schema.keysNames, 0)
+
+	require.Len(t, schema.values, 1)
+	require.Len(t, schema.valuesNames, 1)
+
+	require.Equal(t, FieldTypeString, schema.values[valueName])
+	require.Equal(t, valueName, schema.valuesNames[0])
 }
 
 func TestSetIntKV(t *testing.T) {
