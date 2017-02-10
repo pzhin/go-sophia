@@ -14,11 +14,6 @@ import (
 //   - using upsert
 //     - success
 //     - error
-//   - using delete
-//     - error
-//   - creating schema
-//     - duplicate key
-//     - duplicate value
 //   - test more settings for environment
 //   - test more settings for database
 
@@ -374,6 +369,7 @@ func TestDatabaseDeleteNotExistingKey(t *testing.T) {
 }
 
 // ATTN - This benchmark don't show real performance
+// It is just a long running tests
 func BenchmarkDatabaseSet(b *testing.B) {
 	defer func() { require.Nil(b, os.RemoveAll(DBPath)) }()
 	env, err := NewEnvironment()
@@ -407,6 +403,7 @@ func BenchmarkDatabaseSet(b *testing.B) {
 }
 
 // ATTN - This benchmark don't show real performance
+// It is just a long running tests
 func BenchmarkDatabaseGet(b *testing.B) {
 	defer func() { require.Nil(b, os.RemoveAll(DBPath)) }()
 	env, err := NewEnvironment()
