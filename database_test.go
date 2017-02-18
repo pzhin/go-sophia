@@ -6,7 +6,6 @@ import (
 	"math/rand"
 	"os"
 	"testing"
-	"unsafe"
 
 	"github.com/stretchr/testify/require"
 )
@@ -384,70 +383,12 @@ func TestDatabaseDeleteNotExistingKey(t *testing.T) {
 	require.Nil(t, db.Delete(doc))
 }
 
-func TestDatabaseUpsert(t *testing.T) {
-	defer func() {
-		require.Nil(t, os.RemoveAll(DBPath))
-	}()
-	env, err := NewEnvironment()
-	require.Nil(t, err)
-	require.NotNil(t, env)
-
-	require.True(t, env.Set("sophia.path", DBPath))
-
-	schema := &Schema{}
-	require.Nil(t, schema.AddKey("key", FieldTypeUInt32))
-	require.Nil(t, schema.AddValue("id", FieldTypeUInt32))
-
-	db, err := env.NewDatabase(&DatabaseConfig{
-		Name:   DBName,
-		Schema: schema,
-		Upsert: upsertCallback,
-	})
-	require.Nil(t, err)
-	require.NotNil(t, db)
-
-	require.Nil(t, env.Open())
-
-	/* increment key 10 times */
-	const key uint32 = 1234
-	const iterations = 10
-	var increment int64 = 1
-	for i := 0; i < iterations; i++ {
-		doc := db.Document()
-		doc.Set("key", key)
-		doc.Set("id", increment)
-		require.Nil(t, db.Upsert(doc))
-	}
-
-	/* get */
-	doc := db.Document()
-	doc.Set("key", key)
-
-	result, err := db.Get(doc)
-	require.Nil(t, err)
-	require.NotNil(t, result)
-	defer result.Destroy()
-
-	require.Equal(t, iterations*increment, result.GetInt("id"))
-}
-
-func upsertCallback(count int,
-	src []unsafe.Pointer, srcSize uint32,
-	upsert []unsafe.Pointer, upsertSize uint32,
-	result []unsafe.Pointer, resultSize uint32,
-	arg unsafe.Pointer) int {
-	var a uint32 = *(*uint32)(src[1])
-	var b uint32 = *(*uint32)(upsert[1])
-	ret := a + b
-	resPtr := (*uint32)(result[1])
-	*resPtr = ret
-	return 0
-}
-
 // ATTN - This benchmark don't show real performance
 // It is just a long running tests
 func BenchmarkDatabaseSet(b *testing.B) {
-	defer func() { require.Nil(b, os.RemoveAll(DBPath)) }()
+	defer func() {
+		require.Nil(b, os.RemoveAll(DBPath))
+	}()
 	env, err := NewEnvironment()
 	require.Nil(b, err)
 	require.NotNil(b, env)
@@ -484,7 +425,9 @@ func BenchmarkDatabaseSet(b *testing.B) {
 // ATTN - This benchmark don't show real performance
 // It is just a long running tests
 func BenchmarkDatabaseGet(b *testing.B) {
-	defer func() { require.Nil(b, os.RemoveAll(DBPath)) }()
+	defer func() {
+		require.Nil(b, os.RemoveAll(DBPath))
+	}()
 	env, err := NewEnvironment()
 	require.Nil(b, err)
 	require.NotNil(b, env)
@@ -526,7 +469,6 @@ func BenchmarkDatabaseGet(b *testing.B) {
 		require.Nil(b, err)
 		require.Equal(b, value, d.GetString("value", &size))
 		doc.Free()
-		d.Free()
 		d.Destroy()
 	}
 }

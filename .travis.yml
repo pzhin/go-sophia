@@ -1,16 +1,18 @@
 language: go
 sudo: false
 go:
+  - 1.7
   - tip
 before_install:
   - go get github.com/mattn/goveralls
   - go get github.com/stretchr/testify
 install:
+  - go version
   - go build -v ./...
 branches:
   only:
     - master
 script:
-  - go test -v ./...
+  - go test -v ./... -bench=. -benchmem
 after_success:
   - $HOME/gopath/bin/goveralls -service=travis-ci

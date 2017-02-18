@@ -5,6 +5,7 @@ import (
 )
 
 /*
+#cgo CFLAGS: -I.
 #cgo LDFLAGS: -lrt
 #include <sophia.h>
 extern void    *sp_env(void);

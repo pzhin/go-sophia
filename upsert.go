@@ -68,11 +68,26 @@ func getUpsertArg(index int) unsafe.Pointer {
 func registerUpsertArg(index int, arg interface{}) {
 	upsertArgMu.Lock()
 	defer upsertArgMu.Unlock()
-	val := reflect.ValueOf(arg)
-	if arg == nil || val.IsNil() {
+	if arg == nil {
 		return
 	}
-	upsertArgMap[index] = unsafe.Pointer(val.Pointer())
+	val := reflect.ValueOf(arg)
+	if val.CanAddr() {
+		upsertArgMap[index] = unsafe.Pointer(val.Pointer())
+		return
+	}
+
+	switch val.Kind() {
+	case reflect.String:
+		str := val.String()
+		upsertArgMap[index] = unsafe.Pointer(&str)
+	case reflect.Int, reflect.Int64, reflect.Int8, reflect.Int16, reflect.Int32:
+		i := val.Int()
+		upsertArgMap[index] = unsafe.Pointer(&i)
+	case reflect.Uint, reflect.Uint64, reflect.Uint8, reflect.Uint16, reflect.Uint32:
+		i := val.Uint()
+		upsertArgMap[index] = unsafe.Pointer(&i)
+	}
 }
 
 func registerUpsert(upsertFunc UpsertFunc) (unsafe.Pointer, int) {
