@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestSophiaDatabaseTx(t *testing.T) {
+func TestDatabaseTx(t *testing.T) {
 	defer func() { require.Nil(t, os.RemoveAll(DBPath)) }()
 	var (
 		env *Environment
