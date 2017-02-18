@@ -29,7 +29,7 @@ func TestCursor(t *testing.T) {
 	require.Nil(t, schema.AddValue("value", FieldTypeString))
 
 	db, err := env.NewDatabase(&DatabaseConfig{
-		Name: DBName,
+		Name:   DBName,
 		Schema: schema,
 	})
 	require.Nil(t, err, "failed to create database")
@@ -132,7 +132,7 @@ func TestCursorPrefix(t *testing.T) {
 	require.Nil(t, schema.AddValue("value", FieldTypeString))
 
 	db, err := env.NewDatabase(&DatabaseConfig{
-		Name: DBName,
+		Name:   DBName,
 		Schema: schema,
 	})
 	require.Nil(t, err, "failed to create database")

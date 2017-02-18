@@ -406,7 +406,6 @@ func TestDatabaseUpsert(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, db)
 
-
 	require.Nil(t, env.Open())
 
 	/* increment key 10 times */

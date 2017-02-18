@@ -26,9 +26,9 @@ const (
 // upsertFunc golang binding to upsert_callback.
 // It is a wrapper for UpsertFunc, that converts C types to golang ones
 type upsertFunc func(count C.int,
-	src **C.char, src_size *C.uint32_t,
-	upsert **C.char, upsert_size *C.uint32_t,
-	result **C.char, result_size *C.uint32_t,
+	src **C.char, srcSize *C.uint32_t,
+	upsert **C.char, upsertSize *C.uint32_t,
+	result **C.char, resultSize *C.uint32_t,
 	arg unsafe.Pointer) C.int
 
 // UpsertFunc golang equivalent of upsert_callback.
@@ -42,10 +42,10 @@ type UpsertFunc func(count int,
 
 //export goUpsertCall
 func goUpsertCall(count C.int,
-		src **C.char, src_size *C.uint32_t,
-		upsert **C.char, upsert_size *C.uint32_t,
-		result **C.char, result_size *C.uint32_t,
-		arg unsafe.Pointer) {
+	src **C.char, src_size *C.uint32_t,
+	upsert **C.char, upsert_size *C.uint32_t,
+	result **C.char, result_size *C.uint32_t,
+	arg unsafe.Pointer) {
 	index := *(*int)(arg)
 	fn := getUpsert(index)
 	upsertArg := getUpsertArg(index)
@@ -81,24 +81,24 @@ func registerUpsert(upsertFunc UpsertFunc) (unsafe.Pointer, int) {
 	index := upsertIndex
 	upsertIndex++
 	upsertMap[index] = func(count C.int,
-		src **C.char, src_size *C.uint32_t,
-		upsert **C.char, upsert_size *C.uint32_t,
-		result **C.char, result_size *C.uint32_t,
+		src **C.char, srcSize *C.uint32_t,
+		upsert **C.char, upsertSize *C.uint32_t,
+		result **C.char, resultSize *C.uint32_t,
 		arg unsafe.Pointer) C.int {
 		if src == nil {
 			return C.int(0)
 		}
 		var sSize uint32
-		if src_size != nil {
-			sSize = uint32(*src_size)
+		if srcSize != nil {
+			sSize = uint32(*srcSize)
 		}
-		uSize := uint32(*upsert_size)
-		rSize := uint32(*result_size)
+		uSize := uint32(*upsertSize)
+		rSize := uint32(*resultSize)
 		countN := int(count)
 
-		slice1 := (*[1<<4]unsafe.Pointer)(unsafe.Pointer(src))[:countN:countN]
-		slice2 := (*[1<<4]unsafe.Pointer)(unsafe.Pointer(upsert))[:countN:countN]
-		slice3 := (*[1<<4]unsafe.Pointer)(unsafe.Pointer(result))[:countN:countN]
+		slice1 := (*[1 << 4]unsafe.Pointer)(unsafe.Pointer(src))[:countN:countN]
+		slice2 := (*[1 << 4]unsafe.Pointer)(unsafe.Pointer(upsert))[:countN:countN]
+		slice3 := (*[1 << 4]unsafe.Pointer)(unsafe.Pointer(result))[:countN:countN]
 
 		res := upsertFunc(countN,
 			slice1, sSize,

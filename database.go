@@ -5,7 +5,6 @@ import (
 	"fmt"
 )
 
-
 // DatabaseConfig a structure for the description of the database to be created.
 type DatabaseConfig struct {
 	// Name of database.
