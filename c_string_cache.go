@@ -1,8 +1,9 @@
 package sophia
 
 import (
-	"C"
 	"sync"
+
+	"C"
 )
 
 var cache = map[string]*C.char{}

@@ -37,7 +37,6 @@ func (d *dataStore) Set(doc *Document) error {
 
 // Upsert sets the row of the set of keys.
 func (d *dataStore) Upsert(doc *Document) error {
-	panic("not supported yet")
 	if !spUpsert(d.ptr, doc.ptr) {
 		return fmt.Errorf("failed Upsert document: err=%v", d.env.Error())
 	}

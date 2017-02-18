@@ -25,7 +25,7 @@ const (
 	// CursorPrefix uses for setting cursor prefix
 	CursorPrefix = "prefix"
 	// CursorOrder uses for setting cursor order
-	CursorOrder  = "order"
+	CursorOrder = "order"
 )
 
 // Cursor iterates over key-values in a database.

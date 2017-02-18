@@ -38,7 +38,7 @@ func (s *varStore) Set(path string, val interface{}) bool {
 	}
 
 	cPath := getCStringFromCache(path)
-	s.pointers = append(s.pointers, unsafe.Pointer(cPath))
+
 	size := int(reflect.TypeOf(val).Size())
 	return spSetString(s.ptr, cPath, (unsafe.Pointer)(reflect.ValueOf(val).Pointer()), size)
 }

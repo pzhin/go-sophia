@@ -39,6 +39,20 @@ func (env *Environment) NewDatabase(config *DatabaseConfig) (*Database, error) {
 		env.SetString(fmt.Sprintf("db.%s.scheme.%s", config.Name, n), typ.String())
 		i++
 	}
+	if config.Upsert != nil {
+		ptr, index := registerUpsert(config.Upsert)
+		ok := env.Set(fmt.Sprintf(keyUpsertTemplate, config.Name), ptr)
+		if !ok {
+			unregisterUpsert(index)
+			return nil, env.Error()
+		}
+		registerUpsertArg(index, config.UpsertArg)
+		ok = env.Set(fmt.Sprintf(keyUpsertArgTemplate, config.Name), &index)
+		if !ok {
+			unregisterUpsert(index)
+			return nil, env.Error()
+		}
+	}
 	db := env.GetObject(fmt.Sprintf("db.%s", config.Name))
 	if db == nil {
 		return nil, fmt.Errorf("failed get database: %v", env.Error())

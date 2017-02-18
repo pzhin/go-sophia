@@ -14,6 +14,11 @@ type DatabaseConfig struct {
 	// Schema of database.
 	// It is used to describe the keys and values that will be stored in the database.
 	Schema *Schema
+	// Upsert is a function that will be called on every upsert operation.
+	// If it was not set during the configuration database, upsert operation will not be available
+	Upsert UpsertFunc
+	// UpsertArg an argument which is additionally passed every call
+	UpsertArg interface{}
 }
 
 // Database is used for accessing a database.
