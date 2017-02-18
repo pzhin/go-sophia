@@ -5,9 +5,20 @@ import (
 	"fmt"
 )
 
+
+// DatabaseConfig a structure for the description of the database to be created.
+type DatabaseConfig struct {
+	// Name of database.
+	// It will be used to set and get values specific to this base.
+	Name string
+	// Schema of database.
+	// It is used to describe the keys and values that will be stored in the database.
+	Schema *Schema
+}
+
 // Database is used for accessing a database.
-// Take it's name from sophia
-// Usually object with same features are called 'table'
+// Take it's name from sophia.
+// Usually object with same features is called 'table'.
 type Database struct {
 	*dataStore
 	name        string

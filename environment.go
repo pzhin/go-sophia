@@ -24,29 +24,29 @@ func NewEnvironment() (*Environment, error) {
 	return &Environment{varStore: newVarStore(ptr, 4)}, nil
 }
 
-func (env *Environment) NewDatabase(name string, schema *Schema) (*Database, error) {
-	if !env.SetString("db", name) {
+func (env *Environment) NewDatabase(config *DatabaseConfig) (*Database, error) {
+	if !env.SetString("db", config.Name) {
 		return nil, fmt.Errorf("failed create database: %v", env.Error())
 	}
 	i := 0
-	for n, typ := range schema.keys {
-		env.SetString(fmt.Sprintf("db.%s.scheme", name), n)
-		env.SetString(fmt.Sprintf("db.%s.scheme.%s", name, n), fmt.Sprintf("%s,key(%d)", typ.String(), i))
+	for n, typ := range config.Schema.keys {
+		env.SetString(fmt.Sprintf("db.%s.scheme", config.Name), n)
+		env.SetString(fmt.Sprintf("db.%s.scheme.%s", config.Name, n), fmt.Sprintf("%s,key(%d)", typ.String(), i))
 		i++
 	}
-	for n, typ := range schema.values {
-		env.SetString(fmt.Sprintf("db.%s.scheme", name), n)
-		env.SetString(fmt.Sprintf("db.%s.scheme.%s", name, n), typ.String())
+	for n, typ := range config.Schema.values {
+		env.SetString(fmt.Sprintf("db.%s.scheme", config.Name), n)
+		env.SetString(fmt.Sprintf("db.%s.scheme.%s", config.Name, n), typ.String())
 		i++
 	}
-	db := env.GetObject(fmt.Sprintf("db.%s", name))
+	db := env.GetObject(fmt.Sprintf("db.%s", config.Name))
 	if db == nil {
 		return nil, fmt.Errorf("failed get database: %v", env.Error())
 	}
 	return &Database{
 		dataStore:   newDataStore(db, env),
-		name:        name,
-		schema:      schema,
+		name:        config.Name,
+		schema:      config.Schema,
 		fieldsCount: i,
 	}, nil
 }

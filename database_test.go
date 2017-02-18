@@ -69,7 +69,10 @@ func testNewDatabase(t *testing.T, env *Environment) *Database {
 	require.Nil(t, schema.AddKey("key", FieldTypeString))
 	require.Nil(t, schema.AddValue("value", FieldTypeString))
 
-	db, err := env.NewDatabase(DBName, schema)
+	db, err := env.NewDatabase(&DatabaseConfig{
+		Name:   DBName,
+		Schema: schema,
+	})
 	require.Nil(t, err)
 	require.NotNil(t, db)
 	require.Nil(t, env.Open())
@@ -192,7 +195,10 @@ func TestSetIntKV(t *testing.T) {
 	require.Nil(t, schema.AddKey("key", FieldTypeUInt32))
 	require.Nil(t, schema.AddValue("value", FieldTypeUInt32))
 
-	db, err := env.NewDatabase(DBName, schema)
+	db, err := env.NewDatabase(&DatabaseConfig{
+		Name:   DBName,
+		Schema: schema,
+	})
 	require.Nil(t, err)
 	require.NotNil(t, db)
 	require.Nil(t, env.Open())
@@ -236,7 +242,10 @@ func TestSetMultiKey(t *testing.T) {
 	require.Nil(t, schema.AddKey("key_k", FieldTypeUInt32))
 	require.Nil(t, schema.AddValue("value", FieldTypeUInt64))
 
-	db, err := env.NewDatabase(DBName, schema)
+	db, err := env.NewDatabase(&DatabaseConfig{
+		Name:   DBName,
+		Schema: schema,
+	})
 	require.Nil(t, err)
 	require.NotNil(t, db)
 	require.Nil(t, env.Open())
@@ -294,7 +303,10 @@ func TestDatabaseUseSomeDocumentsAtTheSameTime(t *testing.T) {
 	require.Nil(t, schema.AddKey("key", FieldTypeString))
 	require.Nil(t, schema.AddValue("value", FieldTypeString))
 
-	db, err := env.NewDatabase(DBName, schema)
+	db, err := env.NewDatabase(&DatabaseConfig{
+		Name:   DBName,
+		Schema: schema,
+	})
 	require.Nil(t, err)
 	require.NotNil(t, db)
 	require.Nil(t, env.Open())
@@ -357,7 +369,10 @@ func TestDatabaseDeleteNotExistingKey(t *testing.T) {
 	require.Nil(t, schema.AddKey("key", FieldTypeString))
 	require.Nil(t, schema.AddValue("value", FieldTypeString))
 
-	db, err := env.NewDatabase(DBName, schema)
+	db, err := env.NewDatabase(&DatabaseConfig{
+		Name:   DBName,
+		Schema: schema,
+	})
 	require.Nil(t, err)
 	require.NotNil(t, db)
 	require.Nil(t, env.Open())
@@ -382,7 +397,10 @@ func BenchmarkDatabaseSet(b *testing.B) {
 	require.Nil(b, schema.AddKey("key", FieldTypeString))
 	require.Nil(b, schema.AddValue("value", FieldTypeString))
 
-	db, err := env.NewDatabase(DBName, schema)
+	db, err := env.NewDatabase(&DatabaseConfig{
+		Name:   DBName,
+		Schema: schema,
+	})
 	require.Nil(b, err)
 	require.NotNil(b, db)
 	require.Nil(b, env.Open())
@@ -416,7 +434,10 @@ func BenchmarkDatabaseGet(b *testing.B) {
 	require.Nil(b, schema.AddKey("key", FieldTypeString))
 	require.Nil(b, schema.AddValue("value", FieldTypeString))
 
-	db, err := env.NewDatabase(DBName, schema)
+	db, err := env.NewDatabase(&DatabaseConfig{
+		Name:   DBName,
+		Schema: schema,
+	})
 	require.Nil(b, err)
 	require.NotNil(b, db)
 	require.Nil(b, env.Open())

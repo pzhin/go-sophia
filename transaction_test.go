@@ -29,8 +29,8 @@ func TestSophiaDatabaseTx(t *testing.T) {
 	}
 	t.Run("Get", func(t *testing.T) { testGetTx(t, env.BeginTx(), db) })
 	t.Run("Detele", func(t *testing.T) { testDeleteTx(t, env.BeginTx(), db) })
-	t.Run("Tx rollback", func(t *testing.T) { testTxRollback(t, env, db) })
-	t.Run("Concurrent Tx", func(t *testing.T) { testConcurrentTx(t, env, db) })
+	t.Run("Rollback", func(t *testing.T) { testTxRollback(t, env, db) })
+	t.Run("Concurrent", func(t *testing.T) { testConcurrentTx(t, env, db) })
 }
 
 func testSetTx(t *testing.T, tx *Transaction, db *Database) {

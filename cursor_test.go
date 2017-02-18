@@ -24,7 +24,10 @@ func TestCursor(t *testing.T) {
 	require.Nil(t, schema.AddKey("key", FieldTypeUInt64))
 	require.Nil(t, schema.AddValue("value", FieldTypeString))
 
-	db, err := env.NewDatabase(DBName, schema)
+	db, err := env.NewDatabase(&DatabaseConfig{
+		Name: DBName,
+		Schema: schema,
+	})
 	require.Nil(t, err, "failed to create database")
 	require.Nil(t, env.Open(), "failed to open environment")
 
@@ -124,7 +127,10 @@ func TestCursorPrefix(t *testing.T) {
 	require.Nil(t, schema.AddKey("key", FieldTypeString))
 	require.Nil(t, schema.AddValue("value", FieldTypeString))
 
-	db, err := env.NewDatabase(DBName, schema)
+	db, err := env.NewDatabase(&DatabaseConfig{
+		Name: DBName,
+		Schema: schema,
+	})
 	require.Nil(t, err, "failed to create database")
 	require.Nil(t, env.Open(), "failed to open environment")
 
