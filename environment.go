@@ -25,20 +25,16 @@ func NewEnvironment() (*Environment, error) {
 }
 
 func (env *Environment) NewDatabase(config *DatabaseConfig) (*Database, error) {
+	if config.DirectIO && !config.DisableMmapMode {
+		panic("illegal configuration: both direct_io and mmap is enabled")
+	}
+
 	if !env.SetString("db", config.Name) {
-		return nil, fmt.Errorf("failed create database: %v", env.Error())
+		return nil, fmt.Errorf("failed to create database: %v", env.Error())
 	}
-	i := 0
-	for n, typ := range config.Schema.keys {
-		env.SetString(fmt.Sprintf("db.%s.scheme", config.Name), n)
-		env.SetString(fmt.Sprintf("db.%s.scheme.%s", config.Name, n), fmt.Sprintf("%s,key(%d)", typ.String(), i))
-		i++
-	}
-	for n, typ := range config.Schema.values {
-		env.SetString(fmt.Sprintf("db.%s.scheme", config.Name), n)
-		env.SetString(fmt.Sprintf("db.%s.scheme.%s", config.Name, n), typ.String())
-		i++
-	}
+
+	fieldsCount := env.initializeSchema(config.Name, config.Schema)
+
 	if config.Upsert != nil {
 		ptr, index := registerUpsert(config.Upsert)
 		ok := env.Set(fmt.Sprintf(keyUpsertTemplate, config.Name), ptr)
@@ -53,16 +49,66 @@ func (env *Environment) NewDatabase(config *DatabaseConfig) (*Database, error) {
 			return nil, env.Error()
 		}
 	}
+
+	env.configureCompaction(config)
+
+	env.SetInt(fmt.Sprintf(keyMmap, config.Name), boolToInt(config.DisableMmapMode))
+	env.SetInt(fmt.Sprintf(keyDirectIO, config.Name), boolToInt(config.DirectIO))
+	env.SetInt(fmt.Sprintf(keySync, config.Name), boolToInt(config.DisableSync))
+
+	env.SetString(fmt.Sprintf(keyCompression, config.Name), config.Compression.String())
+
 	db := env.GetObject(fmt.Sprintf("db.%s", config.Name))
 	if db == nil {
-		return nil, fmt.Errorf("failed get database: %v", env.Error())
+		return nil, fmt.Errorf("failed to get database object: %v", env.Error())
 	}
 	return &Database{
 		dataStore:   newDataStore(db, env),
 		name:        config.Name,
 		schema:      config.Schema,
-		fieldsCount: i,
+		fieldsCount: fieldsCount,
 	}, nil
+}
+
+func (env *Environment) initializeSchema(name string, schema *Schema) int {
+	i := 0
+	var schemaPath = fmt.Sprintf("db.%s.scheme", name)
+	for n, typ := range schema.keys {
+		env.SetString(schemaPath, n)
+		keyPath := fmt.Sprintf("db.%s.scheme.%s", name, n)
+		key := fmt.Sprintf("%s,key(%d)", typ.String(), i)
+		env.SetString(keyPath, key)
+		i++
+	}
+	for n, typ := range schema.values {
+		env.SetString(schemaPath, n)
+		value := fmt.Sprintf("db.%s.scheme.%s", name, n)
+		env.SetString(value, typ.String())
+		i++
+	}
+	return i
+}
+
+func (env *Environment) configureCompaction(config *DatabaseConfig) {
+	if config.CompactionCacheSize != 0 {
+		env.SetInt(fmt.Sprintf(keyCompactionCache, config.Name), config.CompactionCacheSize)
+	}
+	if config.CompactionExpirePeriod != 0 {
+		env.SetInt(fmt.Sprintf(keyCompactionExpirePeriod, config.Name), config.CompactionExpirePeriod)
+	}
+	if config.CompactionGCPeriod != 0 {
+		env.SetInt(fmt.Sprintf(keyCompactionGCPeriod, config.Name), config.CompactionGCPeriod)
+	}
+	if config.CompactionGCWatermark != 0 {
+		env.SetInt(fmt.Sprintf(keyCompactionGCWatermark, config.Name), config.CompactionGCWatermark)
+	}
+	if config.CompactionNodeSize != 0 {
+		env.SetInt(fmt.Sprintf(keyCompactionNodeSize, config.Name), config.CompactionNodeSize)
+	}
+	if config.CompactionPageSize != 0 {
+		env.SetInt(fmt.Sprintf(keyCompactionPageSize, config.Name), config.CompactionPageSize)
+	}
+	env.SetInt(fmt.Sprintf(keyCompactionPageChecksum, config.Name), boolToInt(config.DisableCompactionPageChecksum))
 }
 
 // Close closes the environment and frees its associated memory. You must call
@@ -99,4 +145,11 @@ func (env *Environment) BeginTx() *Transaction {
 	return &Transaction{
 		dataStore: newDataStore(spBegin(env.ptr), env),
 	}
+}
+
+func boolToInt(val bool) int64 {
+	if val {
+		return 1
+	}
+	return 0
 }
