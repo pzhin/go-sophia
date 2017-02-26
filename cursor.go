@@ -38,8 +38,8 @@ type Cursor interface {
 	Close() error
 }
 
-// ErrClosedCursorUsage will be returned in case of closed cursor usage
-var ErrClosedCursorUsage = errors.New("cursor is already closed")
+// ErrCursorClosed will be returned in case of closed cursor usage
+var ErrCursorClosed = errors.New("usage of closed cursor")
 
 // Cursor iterates over key-values in a database.
 type cursor struct {
@@ -52,7 +52,7 @@ type cursor struct {
 // on the database can hang indefinitely.
 func (cur *cursor) Close() error {
 	if cur.closed {
-		return ErrClosedCursorUsage
+		return ErrCursorClosed
 	}
 	cur.doc.Free()
 	cur.closed = true

@@ -120,10 +120,14 @@ func testReverseCursor(t *testing.T, db *Database) {
 func TestCursorPrefix(t *testing.T) {
 	dbDir, err := ioutil.TempDir("", "sophia")
 	require.Nil(t, err, "failed to create temp dir for database")
-	defer func() { require.Nil(t, os.RemoveAll(dbDir)) }()
+	defer func() {
+		require.Nil(t, os.RemoveAll(dbDir))
+	}()
 	env, err := NewEnvironment()
 	require.Nil(t, err, "failed to create new environment")
-	defer func() { require.Nil(t, env.Close()) }()
+	defer func() {
+		require.Nil(t, env.Close())
+	}()
 
 	require.True(t, env.SetString("sophia.path", dbDir))
 

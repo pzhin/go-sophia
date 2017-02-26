@@ -34,3 +34,10 @@ func (s *Schema) AddValue(name string, typ FieldType) error {
 	s.values[name] = typ
 	return nil
 }
+
+func defaultSchema() *Schema {
+	schema := &Schema{}
+	schema.AddKey("key", FieldTypeString)
+	schema.AddKey("value", FieldTypeString)
+	return schema
+}

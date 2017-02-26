@@ -24,16 +24,18 @@ func TestDatabaseTx(t *testing.T) {
 		t.Fatal("Failed to create database object")
 	}
 
-	if !t.Run("Set", func(t *testing.T) { testSetTx(t, env.BeginTx(), db) }) {
+	if !t.Run("Set", func(t *testing.T) { testSetTx(t, env, db) }) {
 		t.Fatal("Set operations are failed")
 	}
-	t.Run("Get", func(t *testing.T) { testGetTx(t, env.BeginTx(), db) })
-	t.Run("Detele", func(t *testing.T) { testDeleteTx(t, env.BeginTx(), db) })
+	t.Run("Get", func(t *testing.T) { testGetTx(t, env, db) })
+	t.Run("Detele", func(t *testing.T) { testDeleteTx(t, env, db) })
 	t.Run("Rollback", func(t *testing.T) { testTxRollback(t, env, db) })
 	t.Run("Concurrent", func(t *testing.T) { testConcurrentTx(t, env, db) })
 }
 
-func testSetTx(t *testing.T, tx *Transaction, db *Database) {
+func testSetTx(t *testing.T, env *Environment, db *Database) {
+	tx, err := env.BeginTx()
+	require.Nil(t, err)
 	for i := 0; i < RecordsCount; i++ {
 		doc := db.Document()
 		require.True(t, doc.Set("key", fmt.Sprintf(KeyTemplate, i)))
@@ -45,7 +47,9 @@ func testSetTx(t *testing.T, tx *Transaction, db *Database) {
 	require.Equal(t, TxOk, tx.Commit())
 }
 
-func testGetTx(t *testing.T, tx *Transaction, db *Database) {
+func testGetTx(t *testing.T, env *Environment, db *Database) {
+	tx, err := env.BeginTx()
+	require.Nil(t, err)
 	for i := 0; i < RecordsCount; i++ {
 		doc := db.Document()
 		require.NotNil(t, doc)
@@ -63,7 +67,9 @@ func testGetTx(t *testing.T, tx *Transaction, db *Database) {
 	require.Equal(t, TxOk, tx.Commit())
 }
 
-func testDeleteTx(t *testing.T, tx *Transaction, db *Database) {
+func testDeleteTx(t *testing.T, env *Environment, db *Database) {
+	tx, err := env.BeginTx()
+	require.Nil(t, err)
 	for i := 0; i < RecordsCount; i++ {
 		doc := db.Document()
 		require.NotNil(t, doc)
@@ -85,7 +91,8 @@ func testDeleteTx(t *testing.T, tx *Transaction, db *Database) {
 }
 
 func testTxRollback(t *testing.T, env *Environment, db *Database) {
-	tx := env.BeginTx()
+	tx, err := env.BeginTx()
+	require.Nil(t, err)
 
 	for i := 0; i < RecordsCount; i++ {
 		doc := db.Document()
@@ -118,8 +125,10 @@ func testConcurrentTx(t *testing.T, env *Environment, db *Database) {
 		doc.Free()
 	}
 
-	tx1 := env.BeginTx()
-	tx2 := env.BeginTx()
+	tx1, err := env.BeginTx()
+	require.Nil(t, err)
+	tx2, err := env.BeginTx()
+	require.Nil(t, err)
 
 	for i := 0; i < RecordsCount; i++ {
 		doc := db.Document()

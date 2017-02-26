@@ -7,6 +7,8 @@ import (
 
 const errorPath = "sophia.error"
 
+var ErrEnvironmentClosed = errors.New("usage of closed environment")
+
 // Environment is used to configure the database before opening.
 // Take it's name from sophia
 // Usually object with same features are called 'database'
@@ -25,14 +27,24 @@ func NewEnvironment() (*Environment, error) {
 }
 
 func (env *Environment) NewDatabase(config *DatabaseConfig) (*Database, error) {
+	if env.ptr == nil {
+		return nil, ErrEnvironmentClosed
+	}
+	if config == nil {
+		return nil, errors.New("illegal configuration: nil configuration")
+	}
+
 	if config.DirectIO && !config.DisableMmapMode {
-		panic("illegal configuration: both direct_io and mmap is enabled")
+		return nil, errors.New("illegal configuration: both direct_io and mmap is enabled")
 	}
 
 	if !env.SetString("db", config.Name) {
 		return nil, fmt.Errorf("failed to create database: %v", env.Error())
 	}
 
+	if config.Schema == nil {
+		config.Schema = defaultSchema()
+	}
 	fieldsCount := env.initializeSchema(config.Name, config.Schema)
 
 	if config.Upsert != nil {
@@ -52,9 +64,9 @@ func (env *Environment) NewDatabase(config *DatabaseConfig) (*Database, error) {
 
 	env.configureCompaction(config)
 
-	env.SetInt(fmt.Sprintf(keyMmap, config.Name), boolToInt(config.DisableMmapMode))
+	env.SetInt(fmt.Sprintf(keyMmap, config.Name), boolToInt(!config.DisableMmapMode))
 	env.SetInt(fmt.Sprintf(keyDirectIO, config.Name), boolToInt(config.DirectIO))
-	env.SetInt(fmt.Sprintf(keySync, config.Name), boolToInt(config.DisableSync))
+	env.SetInt(fmt.Sprintf(keySync, config.Name), boolToInt(!config.DisableSync))
 
 	env.SetString(fmt.Sprintf(keyCompression, config.Name), config.Compression.String())
 
@@ -108,16 +120,20 @@ func (env *Environment) configureCompaction(config *DatabaseConfig) {
 	if config.CompactionPageSize != 0 {
 		env.SetInt(fmt.Sprintf(keyCompactionPageSize, config.Name), config.CompactionPageSize)
 	}
-	env.SetInt(fmt.Sprintf(keyCompactionPageChecksum, config.Name), boolToInt(config.DisableCompactionPageChecksum))
+	env.SetInt(fmt.Sprintf(keyCompactionPageChecksum, config.Name), boolToInt(!config.DisableCompactionPageChecksum))
 }
 
-// Close closes the environment and frees its associated memory. You must call
-// Close on any Environment created with NewEnvironment.
+// Close closes the environment and frees its associated memory.
+// You must call Close on any Environment created with NewEnvironment.
 func (env *Environment) Close() error {
+	if env.ptr == nil {
+		return ErrEnvironmentClosed
+	}
 	env.Free()
 	if !spDestroy(env.ptr) {
-		return errors.New("env: failed to close")
+		return fmt.Errorf("failed to close: %v", env.Error())
 	}
+	env.ptr = nil
 	return nil
 }
 
@@ -131,6 +147,9 @@ func (env *Environment) Open() error {
 }
 
 func (env *Environment) Error() error {
+	if env.ptr == nil {
+		return ErrEnvironmentClosed
+	}
 	var size int
 	err := spGetString(env.ptr, getCStringFromCache(errorPath), &size)
 	if err != nil {
@@ -141,10 +160,17 @@ func (env *Environment) Error() error {
 	return nil
 }
 
-func (env *Environment) BeginTx() *Transaction {
-	return &Transaction{
-		dataStore: newDataStore(spBegin(env.ptr), env),
+func (env *Environment) BeginTx() (*Transaction, error) {
+	if env.ptr == nil {
+		return nil, ErrEnvironmentClosed
 	}
+	ptr := spBegin(env.ptr)
+	if ptr == nil {
+		return nil, fmt.Errorf("failed to begin transaction: %v", env.Error())
+	}
+	return &Transaction{
+		dataStore: newDataStore(ptr, env),
+	}, nil
 }
 
 func boolToInt(val bool) int64 {
