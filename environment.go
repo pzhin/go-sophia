@@ -26,6 +26,9 @@ func NewEnvironment() (*Environment, error) {
 	return &Environment{varStore: newVarStore(ptr, 4)}, nil
 }
 
+// NewDatabase creates new database in environment with given configuration.
+// At least database's name should be defined. Another options aren't required.
+// Database configuration can't be changed after Environment's Open() was called.
 func (env *Environment) NewDatabase(config *DatabaseConfig) (*Database, error) {
 	if env.ptr == nil {
 		return nil, ErrEnvironmentClosed
@@ -146,6 +149,7 @@ func (env *Environment) Open() error {
 	return nil
 }
 
+// Error returns last received error
 func (env *Environment) Error() error {
 	if env.ptr == nil {
 		return ErrEnvironmentClosed
@@ -160,6 +164,8 @@ func (env *Environment) Error() error {
 	return nil
 }
 
+// BeginTx starts an Transaction
+// Commit() or Rollback() should be called to release resources.
 func (env *Environment) BeginTx() (*Transaction, error) {
 	if env.ptr == nil {
 		return nil, ErrEnvironmentClosed

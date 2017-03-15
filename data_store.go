@@ -6,6 +6,7 @@ import (
 	"unsafe"
 )
 
+// ErrNotFound error constant for 'NotFount' cases
 var ErrNotFound = errors.New("document not found")
 
 // DataStore provides access to data

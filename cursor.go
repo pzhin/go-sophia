@@ -28,7 +28,7 @@ const (
 	CursorOrder = "order"
 )
 
-// Cursor iterates over key-values in a database.
+// Cursor iterates over records in a database.
 type Cursor interface {
 	// Next fetches the next row for the cursor
 	// Returns next row if it exists else it will return nil

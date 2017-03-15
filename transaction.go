@@ -21,7 +21,7 @@ const (
 // The BeginTx() function is used to start a multi-statement transaction.
 // During transaction, no updates are written to the database files until a Commit() is called.
 // On commit, all modifications that were made are written to the log file in a single batch.
-// To discard any changes made during transaction operation, Destroy() function should be used.
+// To discard any changes made during transaction operation, Rollback() function should be used.
 // No nested transactions are supported.
 // There are no limit on a number of concurrent transactions.
 // Any number of databases can be involved in a multi-statement transaction.

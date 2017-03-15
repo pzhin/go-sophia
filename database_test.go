@@ -11,9 +11,6 @@ import (
 )
 
 // TODO write tests:
-//   - using upsert
-//     - success
-//     - error
 //   - test more settings for environment
 //   - test more settings for database
 

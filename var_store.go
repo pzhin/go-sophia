@@ -24,7 +24,7 @@ func newVarStore(ptr unsafe.Pointer, size int) *varStore {
 	}
 }
 
-// TODO :: implement another types
+// TODO :: implement custom types
 func (s *varStore) Set(path string, val interface{}) bool {
 	v := reflect.ValueOf(val)
 
@@ -58,6 +58,10 @@ func (s *varStore) Get(path string, size *int) unsafe.Pointer {
 	return spGetString(s.ptr, getCStringFromCache(path), size)
 }
 
+// GetString returns string without extra allocations.
+// We can use C pointer to string to make Go string without allocation.
+// C memory will be freed on Document Destroy() call.
+// So for long-term usage you should to make copy of string to avoid data corruption.
 func (s *varStore) GetString(path string, size *int) string {
 	ptr := spGetString(s.ptr, getCStringFromCache(path), size)
 	sh := reflect.StringHeader{Data: uintptr(ptr), Len: *size}

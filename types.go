@@ -3,6 +3,7 @@ package sophia
 // FieldType type of key or value in a row
 type FieldType byte
 
+// FieldType constants for different data types
 const (
 	FieldTypeUInt8 FieldType = iota
 	FieldTypeUInt16
@@ -35,8 +36,10 @@ func (t FieldType) String() string {
 	return name
 }
 
+// CompressionType type of compression for content
 type CompressionType byte
 
+// CompressionType constants for different types of compression
 const (
 	CompressionTypeNone CompressionType = iota
 	CompressionTypeLZ4
