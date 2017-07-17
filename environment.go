@@ -6,6 +6,7 @@ import (
 )
 
 const errorPath = "sophia.error"
+const EnvironmentPath = "sophia.path"
 
 var ErrEnvironmentClosed = errors.New("usage of closed environment")
 
@@ -29,12 +30,9 @@ func NewEnvironment() (*Environment, error) {
 // NewDatabase creates new database in environment with given configuration.
 // At least database's name should be defined. Another options aren't required.
 // Database configuration can't be changed after Environment's Open() was called.
-func (env *Environment) NewDatabase(config *DatabaseConfig) (*Database, error) {
+func (env *Environment) NewDatabase(config DatabaseConfig) (*Database, error) {
 	if env.ptr == nil {
 		return nil, ErrEnvironmentClosed
-	}
-	if config == nil {
-		return nil, errors.New("illegal configuration: nil configuration")
 	}
 
 	if config.DirectIO && !config.DisableMmapMode {
@@ -104,7 +102,7 @@ func (env *Environment) initializeSchema(name string, schema *Schema) int {
 	return i
 }
 
-func (env *Environment) configureCompaction(config *DatabaseConfig) {
+func (env *Environment) configureCompaction(config DatabaseConfig) {
 	if config.CompactionCacheSize != 0 {
 		env.SetInt(fmt.Sprintf(keyCompactionCache, config.Name), config.CompactionCacheSize)
 	}

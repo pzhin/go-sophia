@@ -13,16 +13,8 @@ func TestNewEnvironment(t *testing.T) {
 	env, err := NewEnvironment()
 	require.Nil(t, err)
 	require.NotNil(t, env)
-}
 
-func TestEnvironmentNewDatabaseNilConfig(t *testing.T) {
-	env, err := NewEnvironment()
-	require.Nil(t, err)
-	require.NotNil(t, env)
-
-	db, err := env.NewDatabase(nil)
-	require.NotNil(t, err)
-	require.Nil(t, db)
+	require.Nil(t, env.Error())
 }
 
 func TestEnvironmentNewDatabaseEmptyConfig(t *testing.T) {
@@ -30,7 +22,7 @@ func TestEnvironmentNewDatabaseEmptyConfig(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, env)
 
-	db, err := env.NewDatabase(&DatabaseConfig{})
+	db, err := env.NewDatabase(DatabaseConfig{})
 	require.NotNil(t, err)
 	require.Nil(t, db)
 }
@@ -40,7 +32,7 @@ func TestEnvironmentNewDatabaseIllegalConfig(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, env)
 
-	db, err := env.NewDatabase(&DatabaseConfig{
+	db, err := env.NewDatabase(DatabaseConfig{
 		Name:     "test",
 		DirectIO: true,
 	})
@@ -53,7 +45,7 @@ func TestEnvironmentNewDatabaseIllegalName(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, env)
 
-	db, err := env.NewDatabase(&DatabaseConfig{
+	db, err := env.NewDatabase(DatabaseConfig{
 		Name: "test.test",
 	})
 
@@ -66,7 +58,7 @@ func TestEnvironmentNewDatabaseDefaultSchema(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, env)
 
-	db, err := env.NewDatabase(&DatabaseConfig{
+	db, err := env.NewDatabase(DatabaseConfig{
 		Name: "test",
 	})
 	require.Nil(t, err)
@@ -80,8 +72,7 @@ func TestEnvironmentEmptyPath(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, env)
 
-	err = env.Open()
-	require.NotNil(t, err)
+	require.NotNil(t, env.Open())
 }
 
 func TestEnvironmentOpenWithoutDatabase(t *testing.T) {
@@ -89,7 +80,7 @@ func TestEnvironmentOpenWithoutDatabase(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, env)
 
-	require.True(t, env.Set("sophia.path", "test"))
+	require.True(t, env.Set(EnvironmentPath, "test"))
 
 	require.NotNil(t, env.Open())
 }
@@ -106,9 +97,11 @@ func TestEnvironmentCloseTwice(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, env)
 
-	require.True(t, env.Set("sophia.path", dbPath))
+	require.True(t, env.Set(EnvironmentPath, dbPath))
 
-	db, err := env.NewDatabase(&DatabaseConfig{Name: "test"})
+	db, err := env.NewDatabase(DatabaseConfig{
+		Name: "test",
+	})
 	require.Nil(t, err)
 	require.NotNil(t, db)
 

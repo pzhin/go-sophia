@@ -5,25 +5,30 @@ import (
 	"testing"
 	"unsafe"
 
+	"io/ioutil"
+
 	"github.com/stretchr/testify/require"
 )
 
 func TestDatabaseUpsert(t *testing.T) {
-	defer func() {
-		require.Nil(t, os.RemoveAll(DBPath))
-	}()
+	const keyPath = "key"
+	const valuePath = "id"
+	tmpDir, err := ioutil.TempDir("", "sophia_test")
+	require.Nil(t, err)
+	defer os.RemoveAll(tmpDir)
+
 	env, err := NewEnvironment()
 	require.Nil(t, err)
 	require.NotNil(t, env)
 
-	require.True(t, env.Set("sophia.path", DBPath))
+	require.True(t, env.SetString(EnvironmentPath, tmpDir))
 
 	schema := &Schema{}
-	require.Nil(t, schema.AddKey("key", FieldTypeUInt32))
-	require.Nil(t, schema.AddValue("id", FieldTypeUInt32))
+	require.Nil(t, schema.AddKey(keyPath, FieldTypeUInt32))
+	require.Nil(t, schema.AddValue(valuePath, FieldTypeUInt32))
 
-	db, err := env.NewDatabase(&DatabaseConfig{
-		Name:   DBName,
+	db, err := env.NewDatabase(DatabaseConfig{
+		Name:   "test_database",
 		Schema: schema,
 		Upsert: upsertCallback,
 	})
@@ -31,6 +36,7 @@ func TestDatabaseUpsert(t *testing.T) {
 	require.NotNil(t, db)
 
 	require.Nil(t, env.Open())
+	defer env.Close()
 
 	/* increment key 10 times */
 	const key uint32 = 1234
@@ -38,41 +44,45 @@ func TestDatabaseUpsert(t *testing.T) {
 	var increment int64 = 1
 	for i := 0; i < iterations; i++ {
 		doc := db.Document()
-		doc.Set("key", key)
-		doc.Set("id", increment)
+		doc.Set(keyPath, key)
+		doc.Set(valuePath, increment)
 		require.Nil(t, db.Upsert(doc))
 	}
 
 	/* get */
 	doc := db.Document()
-	doc.Set("key", key)
+	doc.Set(keyPath, key)
 
 	result, err := db.Get(doc)
 	require.Nil(t, err)
 	require.NotNil(t, result)
 	defer result.Destroy()
 
-	require.Equal(t, iterations*increment, result.GetInt("id"))
+	require.Equal(t, iterations*increment, result.GetInt(valuePath))
 }
 
 func TestDatabaseUpsertWithArg(t *testing.T) {
-	defer func() {
-		require.Nil(t, os.RemoveAll(DBPath))
-	}()
+	const (
+		keyPath   = "key"
+		valuePath = "id"
+		upsertArg = 5
+	)
+	tmpDir, err := ioutil.TempDir("", "sophia_test")
+	require.Nil(t, err)
+	defer os.RemoveAll(tmpDir)
+
 	env, err := NewEnvironment()
 	require.Nil(t, err)
 	require.NotNil(t, env)
 
-	require.True(t, env.Set("sophia.path", DBPath))
+	require.True(t, env.SetString(EnvironmentPath, tmpDir))
 
 	schema := &Schema{}
-	require.Nil(t, schema.AddKey("key", FieldTypeUInt32))
-	require.Nil(t, schema.AddValue("id", FieldTypeUInt32))
+	require.Nil(t, schema.AddKey(keyPath, FieldTypeUInt32))
+	require.Nil(t, schema.AddValue(valuePath, FieldTypeUInt32))
 
-	const upsertArg = 5
-
-	db, err := env.NewDatabase(&DatabaseConfig{
-		Name:      DBName,
+	db, err := env.NewDatabase(DatabaseConfig{
+		Name:      "test_database",
 		Schema:    schema,
 		Upsert:    upsertCallbackWithArg,
 		UpsertArg: upsertArg,
@@ -81,6 +91,7 @@ func TestDatabaseUpsertWithArg(t *testing.T) {
 	require.NotNil(t, db)
 
 	require.Nil(t, env.Open())
+	defer env.Close()
 
 	/* increment key 10 times */
 	const key uint32 = 1234
@@ -102,7 +113,7 @@ func TestDatabaseUpsertWithArg(t *testing.T) {
 	require.NotNil(t, result)
 	defer result.Destroy()
 
-	expected := iterations*increment+upsertArg*(iterations-1)
+	expected := iterations*increment + upsertArg*(iterations-1)
 	require.Equal(t, expected, result.GetInt("id"))
 }
 
@@ -134,27 +145,31 @@ func upsertCallbackWithArg(count int,
 }
 
 func TestDatabaseUpsertError(t *testing.T) {
-	defer func() {
-		require.Nil(t, os.RemoveAll(DBPath))
-	}()
+	const keyPath = "key"
+	const valuePath = "id"
+	tmpDir, err := ioutil.TempDir("", "sophia_test")
+	require.Nil(t, err)
+	defer os.RemoveAll(tmpDir)
+
 	env, err := NewEnvironment()
 	require.Nil(t, err)
 	require.NotNil(t, env)
 
-	require.True(t, env.Set("sophia.path", DBPath))
+	require.True(t, env.SetString(EnvironmentPath, tmpDir))
 
 	schema := &Schema{}
-	require.Nil(t, schema.AddKey("key", FieldTypeUInt32))
-	require.Nil(t, schema.AddValue("id", FieldTypeUInt32))
+	require.Nil(t, schema.AddKey(keyPath, FieldTypeUInt32))
+	require.Nil(t, schema.AddValue(valuePath, FieldTypeUInt32))
 
-	db, err := env.NewDatabase(&DatabaseConfig{
-		Name:   DBName,
+	db, err := env.NewDatabase(DatabaseConfig{
+		Name:   "test_database",
 		Schema: schema,
 	})
 	require.Nil(t, err)
 	require.NotNil(t, db)
 
 	require.Nil(t, env.Open())
+	defer env.Close()
 	doc := db.Document()
 	require.NotNil(t, doc)
 	require.True(t, doc.Set("key", 1))

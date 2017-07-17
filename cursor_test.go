@@ -11,43 +11,50 @@ import (
 )
 
 func TestCursor(t *testing.T) {
-	dbDir, err := ioutil.TempDir("", "sophia")
-	require.Nil(t, err, "failed to create temp dir for database")
-	defer func() {
-		require.Nil(t, os.RemoveAll(dbDir))
-	}()
-	env, err := NewEnvironment()
-	require.Nil(t, err, "failed to create new environment")
-	defer func() {
-		require.Nil(t, env.Close())
-	}()
+	const (
+		keyPath       = "key"
+		valuePath     = "value"
+		recordsCount  = 100
+		valueTemplate = "value%011v"
+	)
 
-	require.True(t, env.SetString("sophia.path", dbDir))
+	tmpDir, err := ioutil.TempDir("", "sophia_test")
+	require.Nil(t, err)
+	defer os.RemoveAll(tmpDir)
+
+	env, err := NewEnvironment()
+	require.Nil(t, err)
+	require.NotNil(t, env)
+
+	require.True(t, env.SetString(EnvironmentPath, tmpDir))
 
 	schema := &Schema{}
 	require.Nil(t, schema.AddKey("key", FieldTypeUInt64))
 	require.Nil(t, schema.AddValue("value", FieldTypeString))
 
-	db, err := env.NewDatabase(&DatabaseConfig{
-		Name:   DBName,
+	db, err := env.NewDatabase(DatabaseConfig{
+		Name:   "test_database",
 		Schema: schema,
 	})
-	require.Nil(t, err, "failed to create database")
-	require.Nil(t, env.Open(), "failed to open environment")
+	require.Nil(t, err)
+	require.NotNil(t, db)
 
-	for i := 0; i < RecordsCount; i++ {
+	require.Nil(t, env.Open())
+	defer env.Close()
+
+	for i := 0; i < recordsCount; i++ {
 		doc := db.Document()
-		require.True(t, doc.SetInt("key", int64(i)))
-		require.True(t, doc.SetString("value", fmt.Sprintf(ValueTemplate, i)))
+		require.True(t, doc.SetInt(keyPath, int64(i)))
+		require.True(t, doc.SetString(valuePath, fmt.Sprintf(valueTemplate, i)))
 
 		require.Nil(t, db.Set(doc))
 		doc.Free()
 	}
-	t.Run("All records", func(t *testing.T) { testCursor(t, db, 0) })
-	t.Run("Half records", func(t *testing.T) { testCursor(t, db, RecordsCount/2) })
-	t.Run("Quater records", func(t *testing.T) { testCursor(t, db, RecordsCount/4) })
+	t.Run("All records", func(t *testing.T) { testCursor(t, db, 0, recordsCount, valueTemplate) })
+	t.Run("Half records", func(t *testing.T) { testCursor(t, db, recordsCount/2, recordsCount, valueTemplate) })
+	t.Run("Quater records", func(t *testing.T) { testCursor(t, db, recordsCount/4, recordsCount, valueTemplate) })
 	t.Run("Use closed cursor error", func(t *testing.T) { testCursorError(t, db) })
-	t.Run("Reverse iterator", func(t *testing.T) { testReverseCursor(t, db) })
+	t.Run("Reverse iterator", func(t *testing.T) { testReverseCursor(t, db, recordsCount, valueTemplate) })
 }
 
 func testCursorError(t *testing.T, db *Database) {
@@ -65,7 +72,7 @@ func testCursorError(t *testing.T, db *Database) {
 	require.Nil(t, cursor.Next())
 }
 
-func testCursor(t *testing.T, db *Database, start int64) {
+func testCursor(t *testing.T, db *Database, start, count int64, valueTemplate string) {
 	id := start
 	doc := db.Document()
 	require.NotNil(t, doc)
@@ -86,14 +93,14 @@ func testCursor(t *testing.T, db *Database, start int64) {
 	)
 	for d := cursor.Next(); d != nil; d = cursor.Next() {
 		require.Equal(t, id, d.GetInt("key"))
-		require.Equal(t, fmt.Sprintf(ValueTemplate, id), d.GetString("value", &size))
+		require.Equal(t, fmt.Sprintf(valueTemplate, id), d.GetString("value", &size))
 		counter++
 		id++
 	}
-	require.Equal(t, RecordsCount-start, counter)
+	require.Equal(t, count-start, counter)
 }
 
-func testReverseCursor(t *testing.T, db *Database) {
+func testReverseCursor(t *testing.T, db *Database, count int64, valueTemplate string) {
 	doc := db.Document()
 	require.NotNil(t, doc)
 
@@ -108,65 +115,71 @@ func testReverseCursor(t *testing.T, db *Database) {
 
 	var (
 		size int
-		id   int64 = RecordsCount - 1
+		id   int64 = count - 1
 	)
 	for d := cursor.Next(); d != nil; d = cursor.Next() {
 		require.Equal(t, id, d.GetInt("key"))
-		require.Equal(t, fmt.Sprintf(ValueTemplate, id), d.GetString("value", &size))
+		require.Equal(t, fmt.Sprintf(valueTemplate, id), d.GetString("value", &size))
 		id--
 	}
 }
 
 func TestCursorPrefix(t *testing.T) {
-	dbDir, err := ioutil.TempDir("", "sophia")
-	require.Nil(t, err, "failed to create temp dir for database")
-	defer func() {
-		require.Nil(t, os.RemoveAll(dbDir))
-	}()
-	env, err := NewEnvironment()
-	require.Nil(t, err, "failed to create new environment")
-	defer func() {
-		require.Nil(t, env.Close())
-	}()
+	const (
+		keyPath       = "key"
+		valuePath     = "value"
+		recordsCount  = 100
+		valueTemplate = "value%011v"
+	)
+	tmpDir, err := ioutil.TempDir("", "sophia_test")
+	require.Nil(t, err)
+	defer os.RemoveAll(tmpDir)
 
-	require.True(t, env.SetString("sophia.path", dbDir))
+	env, err := NewEnvironment()
+	require.Nil(t, err)
+	require.NotNil(t, env)
+
+	require.True(t, env.SetString(EnvironmentPath, tmpDir))
 
 	schema := &Schema{}
-	require.Nil(t, schema.AddKey("key", FieldTypeString))
-	require.Nil(t, schema.AddValue("value", FieldTypeString))
+	require.Nil(t, schema.AddKey(keyPath, FieldTypeString))
+	require.Nil(t, schema.AddValue(valuePath, FieldTypeString))
 
-	db, err := env.NewDatabase(&DatabaseConfig{
-		Name:   DBName,
+	db, err := env.NewDatabase(DatabaseConfig{
+		Name:   "test_database",
 		Schema: schema,
 	})
-	require.Nil(t, err, "failed to create database")
-	require.Nil(t, env.Open(), "failed to open environment")
+	require.Nil(t, err)
+	require.NotNil(t, db)
+
+	require.Nil(t, env.Open())
+	defer env.Close()
 
 	const base = 36
-	for i := int64(0); i < RecordsCount; i++ {
+	for i := int64(0); i < recordsCount; i++ {
 		doc := db.Document()
-		require.True(t, doc.SetString("key", strconv.FormatInt(i, base)))
-		require.True(t, doc.SetString("value", fmt.Sprintf(ValueTemplate, i)))
+		require.True(t, doc.SetString(keyPath, strconv.FormatInt(i, base)))
+		require.True(t, doc.SetString(valuePath, fmt.Sprintf(valueTemplate, i)))
 
 		require.Nil(t, db.Set(doc))
 		doc.Free()
 	}
 
 	// Calculate prefix for inserted rows
-	c := RecordsCount
+	c := recordsCount
 	maxDigit := 1
 	for c > base {
 		c /= base
 		maxDigit *= base
 	}
-	expectedCount := RecordsCount
+	expectedCount := recordsCount
 	for maxDigit != 1 {
 		c := expectedCount / maxDigit
 		expectedCount -= c * maxDigit
 		maxDigit /= base
 	}
 
-	prefix := RecordsCount - expectedCount
+	prefix := recordsCount - expectedCount
 
 	prefixStr := strconv.FormatInt(int64(prefix), base)
 	prefixStr = prefixStr[:len(prefixStr)-1]
@@ -190,14 +203,15 @@ func TestCursorPrefix(t *testing.T) {
 
 	// get row that match prefix
 	d := cursor.Next()
-	require.Equal(t, prefixStr, d.GetString("key", &size))
-	require.Equal(t, fmt.Sprintf(ValueTemplate, prefix/base), d.GetString("value", &size))
+	require.NotNil(t, d)
+	require.Equal(t, prefixStr, d.GetString(keyPath, &size))
+	require.Equal(t, fmt.Sprintf(valueTemplate, prefix/base), d.GetString(valuePath, &size))
 
 	// get rows that have additional symbol at the end
 	for d := cursor.Next(); d != nil; d = cursor.Next() {
 		id := prefix + count
-		require.Equal(t, strconv.FormatInt(int64(id), base), d.GetString("key", &size))
-		require.Equal(t, fmt.Sprintf(ValueTemplate, id), d.GetString("value", &size))
+		require.Equal(t, strconv.FormatInt(int64(id), base), d.GetString(keyPath, &size))
+		require.Equal(t, fmt.Sprintf(valueTemplate, id), d.GetString(valuePath, &size))
 		count++
 	}
 

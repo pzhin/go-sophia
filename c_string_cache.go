@@ -7,7 +7,7 @@ import (
 )
 
 var cache = map[string]*C.char{}
-var mLock = sync.Mutex{}
+var mLock sync.Mutex
 
 func getCStringFromCache(str string) *C.char {
 	cStr, ok := cache[str]

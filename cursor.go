@@ -28,21 +28,11 @@ const (
 	CursorOrder = "order"
 )
 
-// Cursor iterates over records in a database.
-type Cursor interface {
-	// Next fetches the next row for the cursor
-	// Returns next row if it exists else it will return nil
-	Next() *Document
-	// Close closes cursor
-	// Cursor won't be accessible after this
-	Close() error
-}
-
 // ErrCursorClosed will be returned in case of closed cursor usage
-var ErrCursorClosed = errors.New("usage of closed cursor")
+var ErrCursorClosed = errors.New("usage of closed Cursor")
 
 // Cursor iterates over key-values in a database.
-type cursor struct {
+type Cursor struct {
 	ptr    unsafe.Pointer
 	doc    *Document
 	closed bool
@@ -50,7 +40,8 @@ type cursor struct {
 
 // Close closes the cursor. If a cursor is not closed, future operations
 // on the database can hang indefinitely.
-func (cur *cursor) Close() error {
+// Cursor won't be accessible after this
+func (cur *Cursor) Close() error {
 	if cur.closed {
 		return ErrCursorClosed
 	}
@@ -64,7 +55,7 @@ func (cur *cursor) Close() error {
 
 // Next fetches the next row for the cursor
 // Returns next row if it exists else it will return nil
-func (cur *cursor) Next() *Document {
+func (cur *Cursor) Next() *Document {
 	if cur.closed {
 		return nil
 	}

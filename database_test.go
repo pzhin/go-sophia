@@ -2,10 +2,11 @@ package sophia
 
 import (
 	"fmt"
-	"math"
 	"math/rand"
 	"os"
 	"testing"
+
+	"io/ioutil"
 
 	"github.com/stretchr/testify/require"
 )
@@ -14,299 +15,466 @@ import (
 //   - test more settings for environment
 //   - test more settings for database
 
-const (
-	KeyTemplate   = "key%v"
-	ValueTemplate = "value%v"
+func TestDatabaseDocument(t *testing.T) {
+	tmpDir, err := ioutil.TempDir("", "sophia_test")
+	require.Nil(t, err)
+	defer os.RemoveAll(tmpDir)
 
-	DBPath       = "sophia"
-	DBName       = "test"
-	RecordsCount = 500000
-
-	RecordsCountBench = 5000000
-)
-
-func TestDatabaseCRUD(t *testing.T) {
-	defer func() {
-		require.Nil(t, os.RemoveAll(DBPath))
-	}()
-	var env *Environment
-	var db *Database
-
-	if !t.Run("New Environment", func(t *testing.T) { env = testNewEnvironment(t) }) {
-		t.Fatal("Failed to create environment object")
-	}
-	defer func() { require.Nil(t, env.Close()) }()
-
-	if !t.Run("New Database", func(t *testing.T) { db = testNewDatabase(t, env) }) {
-		t.Fatalf("Failed to create database object: %v", env.Error())
-	}
-
-	if !t.Run("Set", func(t *testing.T) { testSet(t, db) }) {
-		t.Fatalf("Set operations are failed: %v", env.Error())
-	}
-	if !t.Run("Get", func(t *testing.T) { testGet(t, db) }) {
-		t.Fatalf("Get operations are failed: %v", env.Error())
-	}
-	if !t.Run("Detele", func(t *testing.T) { testDelete(t, db) }) {
-		t.Fatalf("FDelete operations are failed: %v", env.Error())
-	}
-}
-
-func testNewEnvironment(t *testing.T) *Environment {
 	env, err := NewEnvironment()
 	require.Nil(t, err)
 	require.NotNil(t, env)
-	return env
+
+	require.True(t, env.SetString(EnvironmentPath, tmpDir))
+
+	db, err := env.NewDatabase(DatabaseConfig{
+		Name: "test_database",
+	})
+	require.Nil(t, err)
+	require.NotNil(t, db)
+
+	require.Nil(t, env.Open())
+	defer env.Close()
+
+	doc := db.Document()
+	require.NotNil(t, doc)
+	require.Nil(t, env.Error())
 }
 
-func testNewDatabase(t *testing.T, env *Environment) *Database {
-	require.True(t, env.Set("sophia.path", DBPath))
+func TestDatabaseSetInClosedEnvironment(t *testing.T) {
+	const (
+		keyPath       = "key"
+		valuePath     = "value"
+		expectedKey   = "key1"
+		expectedValue = "value1"
+	)
+	tmpDir, err := ioutil.TempDir("", "sophia_test")
+	require.Nil(t, err)
+	defer os.RemoveAll(tmpDir)
+
+	env, err := NewEnvironment()
+	require.Nil(t, err)
+	require.NotNil(t, env)
+
+	require.True(t, env.SetString(EnvironmentPath, tmpDir))
+
+	db, err := env.NewDatabase(DatabaseConfig{
+		Name: "test_database",
+	})
+	require.Nil(t, err)
+	require.NotNil(t, db)
+
+	doc := db.Document()
+	require.NotNil(t, doc)
+	require.Nil(t, env.Error())
+	defer doc.Free()
+
+	require.True(t, doc.SetString(keyPath, expectedKey))
+	require.True(t, doc.SetString(valuePath, expectedValue))
+
+	require.NotNil(t, db.Set(doc))
+}
+
+func TestDatabaseSet(t *testing.T) {
+	const (
+		keyPath       = "key"
+		valuePath     = "value"
+		expectedKey   = "key1"
+		expectedValue = "value1"
+	)
+	tmpDir, err := ioutil.TempDir("", "sophia_test")
+	require.Nil(t, err)
+	defer os.RemoveAll(tmpDir)
+
+	env, err := NewEnvironment()
+	require.Nil(t, err)
+	require.NotNil(t, env)
+
+	require.True(t, env.SetString(EnvironmentPath, tmpDir))
+
+	db, err := env.NewDatabase(DatabaseConfig{
+		Name: "test_database",
+	})
+	require.Nil(t, err)
+	require.NotNil(t, db)
+
+	require.Nil(t, env.Open())
+	defer env.Close()
+
+	doc := db.Document()
+	require.NotNil(t, doc)
+	require.Nil(t, env.Error())
+	defer doc.Free()
+
+	require.True(t, doc.SetString(keyPath, expectedKey))
+	require.True(t, doc.SetString(valuePath, expectedValue))
+
+	require.Nil(t, db.Set(doc))
+}
+
+func TestDatabaseGetFromClosedEnvironment(t *testing.T) {
+	const keyPath = "key"
+	const expectedKey = "key1"
+	tmpDir, err := ioutil.TempDir("", "sophia_test")
+	require.Nil(t, err)
+	defer os.RemoveAll(tmpDir)
+
+	env, err := NewEnvironment()
+	require.Nil(t, err)
+	require.NotNil(t, env)
+
+	require.True(t, env.SetString(EnvironmentPath, tmpDir))
+
+	db, err := env.NewDatabase(DatabaseConfig{
+		Name: "test_database",
+	})
+	require.Nil(t, err)
+	require.NotNil(t, db)
+
+	doc := db.Document()
+	require.NotNil(t, doc)
+	require.Nil(t, env.Error())
+	defer doc.Free()
+
+	require.True(t, doc.SetString(keyPath, expectedKey))
+
+	d, err := db.Get(doc)
+	require.NotNil(t, err)
+	require.Nil(t, d)
+}
+
+func TestDatabaseGet(t *testing.T) {
+	const (
+		keyPath       = "key"
+		valuePath     = "value"
+		expectedKey   = "key1"
+		expectedValue = "value1"
+	)
+	tmpDir, err := ioutil.TempDir("", "sophia_test")
+	require.Nil(t, err)
+	defer os.RemoveAll(tmpDir)
+
+	env, err := NewEnvironment()
+	require.Nil(t, err)
+	require.NotNil(t, env)
+
+	require.True(t, env.SetString(EnvironmentPath, tmpDir))
+
+	db, err := env.NewDatabase(DatabaseConfig{
+		Name: "test_database",
+	})
+	require.Nil(t, err)
+	require.NotNil(t, db)
+
+	require.Nil(t, env.Open())
+	defer env.Close()
+
+	doc := db.Document()
+	require.NotNil(t, doc)
+	require.Nil(t, env.Error())
+
+	require.True(t, doc.SetString(keyPath, expectedKey))
+	require.True(t, doc.SetString(valuePath, expectedValue))
+
+	require.Nil(t, db.Set(doc))
+	doc.Free()
+
+	doc = db.Document()
+	require.NotNil(t, doc)
+	require.Nil(t, env.Error())
+	defer doc.Free()
+
+	require.True(t, doc.SetString(keyPath, expectedKey))
+
+	d, err := db.Get(doc)
+	require.Nil(t, err)
+	require.NotNil(t, d)
+	d.Destroy()
+}
+
+func TestDatabaseDeleteFromClosedEnvironment(t *testing.T) {
+	const keyPath = "key"
+	const expectedKey = "key1"
+	tmpDir, err := ioutil.TempDir("", "sophia_test")
+	require.Nil(t, err)
+	defer os.RemoveAll(tmpDir)
+
+	env, err := NewEnvironment()
+	require.Nil(t, err)
+	require.NotNil(t, env)
+
+	require.True(t, env.SetString(EnvironmentPath, tmpDir))
+
+	db, err := env.NewDatabase(DatabaseConfig{
+		Name: "test_database",
+	})
+	require.Nil(t, err)
+	require.NotNil(t, db)
+
+	doc := db.Document()
+	require.NotNil(t, doc)
+	require.Nil(t, env.Error())
+	defer doc.Free()
+
+	require.True(t, doc.SetString(keyPath, expectedKey))
+
+	require.NotNil(t, db.Delete(doc))
+}
+
+func TestDatabaseDelete(t *testing.T) {
+	const (
+		keyPath       = "key"
+		valuePath     = "value"
+		expectedKey   = "key1"
+		expectedValue = "value1"
+	)
+	tmpDir, err := ioutil.TempDir("", "sophia_test")
+	require.Nil(t, err)
+	defer os.RemoveAll(tmpDir)
+
+	env, err := NewEnvironment()
+	require.Nil(t, err)
+	require.NotNil(t, env)
+
+	require.True(t, env.SetString(EnvironmentPath, tmpDir))
+
+	db, err := env.NewDatabase(DatabaseConfig{
+		Name: "test_database",
+	})
+	require.Nil(t, err)
+	require.NotNil(t, db)
+
+	require.Nil(t, env.Open())
+	defer env.Close()
+
+	doc := db.Document()
+	require.NotNil(t, doc)
+	require.Nil(t, env.Error())
+
+	require.True(t, doc.SetString(keyPath, expectedKey))
+	require.True(t, doc.SetString(valuePath, expectedValue))
+
+	require.Nil(t, db.Set(doc))
+	doc.Free()
+
+	doc = db.Document()
+	require.NotNil(t, doc)
+	require.Nil(t, env.Error())
+
+	require.True(t, doc.SetString(keyPath, expectedKey))
+
+	require.Nil(t, db.Delete(doc))
+	doc.Free()
+
+	doc = db.Document()
+	require.NotNil(t, doc)
+	require.Nil(t, env.Error())
+	defer doc.Free()
+
+	require.True(t, doc.SetString(keyPath, expectedKey))
+
+	d, err := db.Get(doc)
+	require.NotNil(t, err)
+	require.Equal(t, ErrNotFound, err)
+	require.Nil(t, d)
+}
+
+func TestDatabaseWithCustomSchema(t *testing.T) {
+	const keyPath = "custom_key"
+	const valuePath = "custom_value"
+	tmpDir, err := ioutil.TempDir("", "sophia_test")
+	require.Nil(t, err)
+	defer os.RemoveAll(tmpDir)
+
+	env, err := NewEnvironment()
+	require.Nil(t, err)
+	require.NotNil(t, env)
+
+	require.True(t, env.SetString(EnvironmentPath, tmpDir))
 
 	schema := &Schema{}
-	require.Nil(t, schema.AddKey("key", FieldTypeString))
-	require.Nil(t, schema.AddValue("value", FieldTypeString))
+	require.Nil(t, schema.AddKey(keyPath, FieldTypeUInt32))
+	require.Nil(t, schema.AddValue(valuePath, FieldTypeUInt32))
 
-	db, err := env.NewDatabase(&DatabaseConfig{
-		Name:   DBName,
+	db, err := env.NewDatabase(DatabaseConfig{
+		Name:   "test_database",
 		Schema: schema,
 	})
 	require.Nil(t, err)
 	require.NotNil(t, db)
+
 	require.Nil(t, env.Open())
-	return db
+	defer env.Close()
+
+	const expectedKey int64 = 42
+	const expectedValue int64 = 73
+
+	doc := db.Document()
+	require.NotNil(t, doc)
+	require.True(t, doc.Set(keyPath, expectedKey))
+	require.True(t, doc.Set(valuePath, expectedValue))
+
+	err = db.Set(doc)
+	doc.Free()
+	require.Nil(t, err)
+
+	doc = db.Document()
+	require.NotNil(t, doc)
+	require.True(t, doc.Set(keyPath, expectedKey))
+
+	d, err := db.Get(doc)
+	doc.Free()
+	require.Nil(t, err)
+	require.NotNil(t, d)
+
+	defer d.Destroy()
+
+	require.Equal(t, expectedKey, d.GetInt(keyPath))
+	require.Equal(t, expectedValue, d.GetInt(valuePath))
+
+	doc = db.Document()
+	require.NotNil(t, doc)
+	require.Nil(t, env.Error())
+
+	require.True(t, doc.Set(keyPath, expectedKey))
+
+	require.Nil(t, db.Delete(doc))
+	doc.Free()
+
+	doc = db.Document()
+	require.NotNil(t, doc)
+	require.Nil(t, env.Error())
+	defer doc.Free()
+
+	require.True(t, doc.Set(keyPath, expectedKey))
+
+	d, err = db.Get(doc)
+	require.NotNil(t, err)
+	require.Equal(t, ErrNotFound, err)
+	require.Nil(t, d)
 }
 
-func testSet(t *testing.T, db *Database) {
-	for i := 0; i < RecordsCount; i++ {
-		doc := db.Document()
-		require.True(t, doc.Set("key", fmt.Sprintf(KeyTemplate, i)))
-		require.True(t, doc.Set("value", fmt.Sprintf(ValueTemplate, i)))
+func TestDatabaseWithMultipleKeys(t *testing.T) {
+	const (
+		key1Path  = "key1"
+		key2Path  = "key2"
+		key3Path  = "key3"
+		valuePath = "value"
+	)
+	tmpDir, err := ioutil.TempDir("", "sophia_test")
+	require.Nil(t, err)
+	defer os.RemoveAll(tmpDir)
 
-		require.Nil(t, db.Set(doc))
-		doc.Free()
-	}
-}
-
-func testGet(t *testing.T, db *Database) {
-	for i := 0; i < RecordsCount; i++ {
-		doc := db.Document()
-		require.NotNil(t, doc)
-		require.True(t, doc.Set("key", fmt.Sprintf(KeyTemplate, i)))
-		d, err := db.Get(doc)
-		doc.Free()
-		require.NotNil(t, d)
-		require.Nil(t, err)
-		var size int
-		require.Equal(t, fmt.Sprintf(KeyTemplate, i), d.GetString("key", &size))
-		require.Equal(t, fmt.Sprintf(ValueTemplate, i), d.GetString("value", &size))
-		d.Destroy()
-	}
-}
-
-func testDelete(t *testing.T, db *Database) {
-	for i := 0; i < RecordsCount; i++ {
-		doc := db.Document()
-		require.NotNil(t, doc)
-		require.True(t, doc.Set("key", fmt.Sprintf(KeyTemplate, i)))
-		require.Nil(t, db.Delete(doc))
-		doc.Free()
-	}
-
-	for i := 0; i < RecordsCount; i++ {
-		doc := db.Document()
-		require.NotNil(t, doc)
-		require.True(t, doc.Set("key", fmt.Sprintf(KeyTemplate, i)))
-		d, err := db.Get(doc)
-		doc.Free()
-		require.Nil(t, d)
-		require.NotNil(t, err)
-	}
-}
-
-func TestSchemaDupKey(t *testing.T) {
-	schema := Schema{}
-	keyName := "key"
-	require.Nil(t, schema.AddKey(keyName, FieldTypeString))
-
-	require.Len(t, schema.keys, 1)
-	require.Len(t, schema.keysNames, 1)
-
-	require.Len(t, schema.values, 0)
-	require.Len(t, schema.valuesNames, 0)
-
-	require.Equal(t, FieldTypeString, schema.keys[keyName])
-	require.Equal(t, keyName, schema.keysNames[0])
-
-	require.NotNil(t, schema.AddKey(keyName, FieldTypeString))
-
-	require.Len(t, schema.keys, 1)
-	require.Len(t, schema.keysNames, 1)
-
-	require.Len(t, schema.values, 0)
-	require.Len(t, schema.valuesNames, 0)
-
-	require.Equal(t, FieldTypeString, schema.keys[keyName])
-	require.Equal(t, keyName, schema.keysNames[0])
-}
-
-func TestSchemaDupValue(t *testing.T) {
-	schema := Schema{}
-	valueName := "key"
-	require.Nil(t, schema.AddValue(valueName, FieldTypeString))
-
-	require.Len(t, schema.keys, 0)
-	require.Len(t, schema.keysNames, 0)
-
-	require.Len(t, schema.values, 1)
-	require.Len(t, schema.valuesNames, 1)
-
-	require.Equal(t, FieldTypeString, schema.values[valueName])
-	require.Equal(t, valueName, schema.valuesNames[0])
-
-	require.NotNil(t, schema.AddValue(valueName, FieldTypeString))
-
-	require.Len(t, schema.keys, 0)
-	require.Len(t, schema.keysNames, 0)
-
-	require.Len(t, schema.values, 1)
-	require.Len(t, schema.valuesNames, 1)
-
-	require.Equal(t, FieldTypeString, schema.values[valueName])
-	require.Equal(t, valueName, schema.valuesNames[0])
-}
-
-func TestSetIntKV(t *testing.T) {
-	defer func() {
-		require.Nil(t, os.RemoveAll(DBPath))
-	}()
 	env, err := NewEnvironment()
 	require.Nil(t, err)
 	require.NotNil(t, env)
-	defer func() {
-		require.Nil(t, env.Close())
-	}()
 
-	require.True(t, env.Set("sophia.path", DBPath))
+	require.True(t, env.SetString(EnvironmentPath, tmpDir))
 
 	schema := &Schema{}
-	require.Nil(t, schema.AddKey("key", FieldTypeUInt32))
-	require.Nil(t, schema.AddValue("value", FieldTypeUInt32))
+	require.Nil(t, schema.AddKey(key1Path, FieldTypeUInt32))
+	require.Nil(t, schema.AddKey(key2Path, FieldTypeUInt32))
+	require.Nil(t, schema.AddKey(key3Path, FieldTypeUInt32))
+	require.Nil(t, schema.AddValue(valuePath, FieldTypeUInt64))
 
-	db, err := env.NewDatabase(&DatabaseConfig{
-		Name:   DBName,
+	db, err := env.NewDatabase(DatabaseConfig{
+		Name:   "test_database",
 		Schema: schema,
 	})
 	require.Nil(t, err)
 	require.NotNil(t, db)
+
 	require.Nil(t, env.Open())
+	defer env.Close()
 
-	for i := 0; i < RecordsCount; i++ {
-		doc := db.Document()
-		require.NotNil(t, doc)
-		require.True(t, doc.Set("key", int64(i)))
-		require.True(t, doc.Set("value", int64(i)))
+	const (
+		expectedKey1  int64 = 4
+		expectedKey2  int64 = 8
+		expectedKey3  int64 = 15
+		expectedValue int64 = 16
+	)
 
-		require.Nil(t, db.Set(doc))
-		doc.Free()
-	}
-	for i := 0; i < RecordsCount; i++ {
-		doc := db.Document()
-		require.NotNil(t, doc)
-		require.True(t, doc.Set("key", int64(i)))
-		d, err := db.Get(doc)
-		doc.Free()
-		require.Nil(t, err)
-		require.NotNil(t, d)
-		require.Equal(t, int64(i), d.GetInt("key"))
-		require.Equal(t, int64(i), d.GetInt("value"))
-		d.Destroy()
-		d.Free()
-	}
-}
+	doc := db.Document()
+	require.NotNil(t, doc)
+	require.True(t, doc.Set(key1Path, expectedKey1))
+	require.True(t, doc.Set(key2Path, expectedKey2))
+	require.True(t, doc.Set(key3Path, expectedKey3))
+	require.True(t, doc.Set(valuePath, expectedValue))
 
-func TestSetMultiKey(t *testing.T) {
-	defer func() { require.Nil(t, os.RemoveAll(DBPath)) }()
-	env, err := NewEnvironment()
+	err = db.Set(doc)
+	doc.Free()
 	require.Nil(t, err)
-	require.NotNil(t, env)
-	defer func() { require.Nil(t, env.Close()) }()
 
-	require.True(t, env.Set("sophia.path", DBPath))
+	doc = db.Document()
+	require.NotNil(t, doc)
+	require.True(t, doc.Set(key1Path, expectedKey1))
+	require.True(t, doc.Set(key2Path, expectedKey2))
+	require.True(t, doc.Set(key3Path, expectedKey3))
 
-	schema := &Schema{}
-	require.Nil(t, schema.AddKey("key", FieldTypeUInt32))
-	require.Nil(t, schema.AddKey("key_j", FieldTypeUInt32))
-	require.Nil(t, schema.AddKey("key_k", FieldTypeUInt32))
-	require.Nil(t, schema.AddValue("value", FieldTypeUInt64))
-
-	db, err := env.NewDatabase(&DatabaseConfig{
-		Name:   DBName,
-		Schema: schema,
-	})
+	d, err := db.Get(doc)
+	doc.Free()
 	require.Nil(t, err)
-	require.NotNil(t, db)
-	require.Nil(t, env.Open())
+	require.NotNil(t, d)
 
-	count := int(math.Pow(RecordsCount, 1/3))
+	defer d.Destroy()
 
-	for i := 0; i < count; i++ {
-		for j := 0; j < count; j++ {
-			for k := 0; k < count; k++ {
-				doc := db.Document()
-				require.True(t, doc.Set("key", i))
-				require.True(t, doc.Set("key_j", uint64(j)))
-				require.True(t, doc.Set("key_k", uint32(k)))
-				require.True(t, doc.Set("value", i))
+	require.Equal(t, expectedKey1, d.GetInt(key1Path))
+	require.Equal(t, expectedKey2, d.GetInt(key2Path))
+	require.Equal(t, expectedKey3, d.GetInt(key3Path))
+	require.Equal(t, expectedValue, d.GetInt(valuePath))
 
-				require.Nil(t, db.Set(doc))
-				doc.Free()
-			}
-		}
-	}
-	for i := 0; i < count; i++ {
-		for j := 0; j < count; j++ {
-			for k := 0; k < count; k++ {
-				doc := db.Document()
-				require.NotNil(t, doc)
-				require.True(t, doc.Set("key", int64(i)))
-				require.True(t, doc.Set("key_j", int64(j)))
-				require.True(t, doc.Set("key_k", int64(k)))
-				d, err := db.Get(doc)
-				doc.Free()
-				require.Nil(t, err)
-				require.NotNil(t, d)
-				require.Equal(t, int64(i), d.GetInt("key"))
-				require.Equal(t, int64(j), d.GetInt("key_j"))
-				require.Equal(t, int64(k), d.GetInt("key_k"))
-				require.Equal(t, int64(i), d.GetInt("value"))
-				d.Destroy()
-				d.Free()
-			}
-		}
-	}
+	doc = db.Document()
+	require.NotNil(t, doc)
+	require.Nil(t, env.Error())
+
+	require.True(t, doc.Set(key1Path, expectedKey1))
+	require.True(t, doc.Set(key2Path, expectedKey2))
+	require.True(t, doc.Set(key3Path, expectedKey3))
+
+	require.Nil(t, db.Delete(doc))
+	doc.Free()
+
+	doc = db.Document()
+	require.NotNil(t, doc)
+	require.Nil(t, env.Error())
+	defer doc.Free()
+
+	require.True(t, doc.Set(key1Path, expectedKey1))
+	require.True(t, doc.Set(key2Path, expectedKey2))
+	require.True(t, doc.Set(key3Path, expectedKey3))
+
+	d, err = db.Get(doc)
+	require.NotNil(t, err)
+	require.Equal(t, ErrNotFound, err)
+	require.Nil(t, d)
 }
 
 func TestDatabaseUseSomeDocumentsAtTheSameTime(t *testing.T) {
-	defer func() {
-		require.Nil(t, os.RemoveAll(DBPath))
-	}()
+	const (
+		keyPath        = "key"
+		valuePath      = "value"
+		expectedKey1   = "key1"
+		expectedValue1 = "value1"
+		expectedKey2   = "key2"
+		expectedValue2 = "value2"
+	)
+	tmpDir, err := ioutil.TempDir("", "sophia_test")
+	require.Nil(t, err)
+	defer os.RemoveAll(tmpDir)
+
 	env, err := NewEnvironment()
 	require.Nil(t, err)
 	require.NotNil(t, env)
 
-	require.True(t, env.Set("sophia.path", DBPath))
+	require.True(t, env.SetString(EnvironmentPath, tmpDir))
 
-	schema := &Schema{}
-	require.Nil(t, schema.AddKey("key", FieldTypeString))
-	require.Nil(t, schema.AddValue("value", FieldTypeString))
-
-	db, err := env.NewDatabase(&DatabaseConfig{
-		Name:   DBName,
-		Schema: schema,
+	db, err := env.NewDatabase(DatabaseConfig{
+		Name: "test_database",
 	})
 	require.Nil(t, err)
 	require.NotNil(t, db)
+
 	require.Nil(t, env.Open())
+	defer env.Close()
 
 	doc1 := db.Document()
 	doc2 := db.Document()
@@ -314,106 +482,122 @@ func TestDatabaseUseSomeDocumentsAtTheSameTime(t *testing.T) {
 	require.NotNil(t, doc1)
 	require.NotNil(t, doc2)
 
-	defer func() {
-		doc1.Free()
-		doc2.Free()
-	}()
+	require.True(t, doc1.Set(keyPath, expectedKey1))
+	require.True(t, doc1.Set(valuePath, expectedValue1))
 
-	require.True(t, doc1.Set("key", "key1"))
-	require.True(t, doc1.Set("value", "value1"))
-	require.True(t, doc2.Set("key", "key2"))
-	require.True(t, doc2.Set("value", "value2"))
+	require.True(t, doc2.Set(keyPath, expectedKey2))
+	require.True(t, doc2.Set(valuePath, expectedValue2))
 
-	db.Set(doc1)
-	db.Set(doc2)
+	require.Nil(t, db.Set(doc1))
+	doc1.Free()
+
+	require.Nil(t, db.Set(doc2))
+	doc2.Free()
 
 	doc := db.Document()
 	require.NotNil(t, doc)
 
-	doc.Set("key", "key1")
+	doc.Set(keyPath, expectedKey1)
 	d, err := db.Get(doc)
+	doc.Free()
 	require.NotNil(t, d)
 	require.Nil(t, err)
 	size := 0
-	require.Equal(t, "value1", d.GetString("value", &size))
-	require.Equal(t, 6, size)
+	require.Equal(t, expectedValue1, d.GetString(valuePath, &size))
+	require.Equal(t, len(expectedValue1), size)
 	d.Destroy()
 
 	doc = db.Document()
 	require.NotNil(t, doc)
 
-	doc.Set("key", "key2")
+	doc.Set(keyPath, expectedKey2)
 	d, err = db.Get(doc)
+	doc.Free()
 	require.NotNil(t, d)
 	require.Nil(t, err)
 	size = 0
-	require.Equal(t, "value2", d.GetString("value", &size))
-	require.Equal(t, 6, size)
+	require.Equal(t, expectedValue2, d.GetString(valuePath, &size))
+	require.Equal(t, len(expectedValue1), size)
 	d.Destroy()
 }
 
 func TestDatabaseDeleteNotExistingKey(t *testing.T) {
-	defer func() {
-		require.Nil(t, os.RemoveAll(DBPath))
-	}()
+	const keyPath = "key"
+	const expectedKey = "key1"
+	tmpDir, err := ioutil.TempDir("", "sophia_test")
+	require.Nil(t, err)
+	defer os.RemoveAll(tmpDir)
+
 	env, err := NewEnvironment()
 	require.Nil(t, err)
 	require.NotNil(t, env)
 
-	require.True(t, env.Set("sophia.path", DBPath))
+	require.True(t, env.SetString(EnvironmentPath, tmpDir))
 
-	schema := &Schema{}
-	require.Nil(t, schema.AddKey("key", FieldTypeString))
-	require.Nil(t, schema.AddValue("value", FieldTypeString))
-
-	db, err := env.NewDatabase(&DatabaseConfig{
-		Name:   DBName,
-		Schema: schema,
+	db, err := env.NewDatabase(DatabaseConfig{
+		Name: "test_database",
 	})
 	require.Nil(t, err)
 	require.NotNil(t, db)
+
 	require.Nil(t, env.Open())
+	defer env.Close()
 
 	doc := db.Document()
 	defer doc.Free()
-	doc.Set("key", "key1")
+	doc.Set(keyPath, expectedKey)
 	require.Nil(t, db.Delete(doc))
 }
 
 // ATTN - This benchmark don't show real performance
 // It is just a long running tests
 func BenchmarkDatabaseSet(b *testing.B) {
-	defer func() {
-		require.Nil(b, os.RemoveAll(DBPath))
-	}()
+	const (
+		keyPath           = "key"
+		valuePath         = "value"
+		KeyTemplate       = "key%013v"
+		ValueTemplate     = "value%011v"
+		RecordsCountBench = 500000
+	)
+	tmpDir, err := ioutil.TempDir("", "sophia_test")
+	require.Nil(b, err)
+	defer os.RemoveAll(tmpDir)
+
 	env, err := NewEnvironment()
 	require.Nil(b, err)
 	require.NotNil(b, env)
 
-	require.True(b, env.Set("sophia.path", DBPath))
+	require.True(b, env.SetString(EnvironmentPath, tmpDir))
 
-	schema := &Schema{}
-	require.Nil(b, schema.AddKey("key", FieldTypeString))
-	require.Nil(b, schema.AddValue("value", FieldTypeString))
-
-	db, err := env.NewDatabase(&DatabaseConfig{
-		Name:   DBName,
-		Schema: schema,
+	db, err := env.NewDatabase(DatabaseConfig{
+		Name: "test_database",
 	})
 	require.Nil(b, err)
 	require.NotNil(b, db)
-	require.Nil(b, env.Open())
 
-	indices := rand.Perm(b.N)
-	keys := make(map[string]string)
+	require.Nil(b, env.Open())
+	defer env.Close()
+
+	indices := rand.Perm(RecordsCountBench)
+
+	type pair struct {
+		key   string
+		value string
+	}
+
+	pairs := make([]pair, 0, RecordsCountBench)
 	for _, i := range indices {
-		keys[fmt.Sprintf(KeyTemplate, i)] = fmt.Sprintf(ValueTemplate, i)
+		pairs = append(pairs, pair{
+			key:   fmt.Sprintf(KeyTemplate, i),
+			value: fmt.Sprintf(ValueTemplate, i),
+		})
 	}
 	b.ResetTimer()
-	for key, value := range keys {
+	for i := 0; i < b.N; i++ {
+		index := i % RecordsCountBench
 		doc := db.Document()
-		require.True(b, doc.Set("key", key))
-		require.True(b, doc.Set("value", value))
+		require.True(b, doc.Set(keyPath, pairs[index].key))
+		require.True(b, doc.Set(valuePath, pairs[index].value))
 		require.Nil(b, db.Set(doc))
 		doc.Free()
 	}
@@ -422,50 +606,65 @@ func BenchmarkDatabaseSet(b *testing.B) {
 // ATTN - This benchmark don't show real performance
 // It is just a long running tests
 func BenchmarkDatabaseGet(b *testing.B) {
-	defer func() {
-		require.Nil(b, os.RemoveAll(DBPath))
-	}()
+	const (
+		keyPath           = "key"
+		valuePath         = "value"
+		KeyTemplate       = "key%013v"
+		ValueTemplate     = "value%011v"
+		RecordsCountBench = 500000
+	)
+	tmpDir, err := ioutil.TempDir("", "sophia_test")
+	require.Nil(b, err)
+	defer os.RemoveAll(tmpDir)
+
 	env, err := NewEnvironment()
 	require.Nil(b, err)
 	require.NotNil(b, env)
 
-	require.True(b, env.Set("sophia.path", DBPath))
+	require.True(b, env.SetString(EnvironmentPath, tmpDir))
 
-	schema := &Schema{}
-	require.Nil(b, schema.AddKey("key", FieldTypeString))
-	require.Nil(b, schema.AddValue("value", FieldTypeString))
-
-	db, err := env.NewDatabase(&DatabaseConfig{
-		Name:   DBName,
-		Schema: schema,
+	db, err := env.NewDatabase(DatabaseConfig{
+		Name: "test_database",
 	})
 	require.Nil(b, err)
 	require.NotNil(b, db)
-	require.Nil(b, env.Open())
 
-	for i := 0; i < RecordsCountBench; i++ {
+	require.Nil(b, env.Open())
+	defer env.Close()
+
+	indices := rand.Perm(RecordsCountBench)
+
+	type pair struct {
+		key   string
+		value string
+	}
+
+	pairs := make([]pair, 0, RecordsCountBench)
+	for _, i := range indices {
+		pairs = append(pairs, pair{
+			key:   fmt.Sprintf(KeyTemplate, i),
+			value: fmt.Sprintf(ValueTemplate, i),
+		})
+	}
+
+	for _, pair := range pairs {
 		doc := db.Document()
-		require.True(b, doc.Set("key", fmt.Sprintf(KeyTemplate, i)))
-		require.True(b, doc.Set("value", fmt.Sprintf(ValueTemplate, i)))
-		err = db.Set(doc)
-		require.Nil(b, err)
+		require.True(b, doc.Set(keyPath, pair.key))
+		require.True(b, doc.Set(valuePath, pair.value))
+		require.Nil(b, db.Set(doc))
 		doc.Free()
 	}
 
-	indices := rand.Perm(b.N)
-	keys := make(map[string]string)
-	for _, i := range indices {
-		keys[fmt.Sprintf(KeyTemplate, i)] = fmt.Sprintf(ValueTemplate, i)
-	}
 	var size int
 	b.ResetTimer()
-	for key, value := range keys {
+	for i := 0; i < b.N; i++ {
+		index := i % RecordsCountBench
 		doc := db.Document()
-		require.True(b, doc.Set("key", key))
+		require.True(b, doc.Set(keyPath, pairs[index].key))
 		d, err := db.Get(doc)
-		require.Nil(b, err)
-		require.Equal(b, value, d.GetString("value", &size))
 		doc.Free()
+		require.Nil(b, err)
+		require.Equal(b, pairs[index].value, d.GetString(valuePath, &size))
 		d.Destroy()
 	}
 }

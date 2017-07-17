@@ -6,17 +6,17 @@ import (
 )
 
 const (
-	keyCompactionCache = "db.%v.compaction.cache"
-	keyCompactionNodeSize = "db.%v.compaction.node_size"
-	keyCompactionPageSize = "db.%v.compaction.page_size"
+	keyCompactionCache        = "db.%v.compaction.cache"
+	keyCompactionNodeSize     = "db.%v.compaction.node_size"
+	keyCompactionPageSize     = "db.%v.compaction.page_size"
 	keyCompactionPageChecksum = "db.%v.compaction.page_checksum"
 	keyCompactionExpirePeriod = "db.%v.compaction.expire_period"
-	keyCompactionGCWatermark = "db.%v.compaction.gc_wm"
-	keyCompactionGCPeriod = "db.%v.compaction.gc_period"
-	keyMmap = "db.%v.mmap"
-	keyCompression = "db.%v.compression"
-	keyDirectIO = "db.%v.direct_io"
-	keySync = "db.%v.sync"
+	keyCompactionGCWatermark  = "db.%v.compaction.gc_wm"
+	keyCompactionGCPeriod     = "db.%v.compaction.gc_period"
+	keyMmap                   = "db.%v.mmap"
+	keyCompression            = "db.%v.compression"
+	keyDirectIO               = "db.%v.direct_io"
+	keySync                   = "db.%v.sync"
 )
 
 // DatabaseConfig a structure for the description of the database to be created.
@@ -95,7 +95,7 @@ func (db *Database) Document() *Document {
 }
 
 // Cursor returns a Cursor for iterating over rows in the database
-func (db *Database) Cursor(doc *Document) (Cursor, error) {
+func (db *Database) Cursor(doc *Document) (*Cursor, error) {
 	if nil == doc {
 		return nil, errors.New("failed to create cursor: nil Document")
 	}
@@ -103,9 +103,8 @@ func (db *Database) Cursor(doc *Document) (Cursor, error) {
 	if nil == cPtr {
 		return nil, fmt.Errorf("failed to create cursor: err=%v", db.env.Error())
 	}
-	cur := &cursor{
+	return &Cursor{
 		ptr: cPtr,
 		doc: doc,
-	}
-	return cur, nil
+	}, nil
 }
