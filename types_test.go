@@ -9,13 +9,13 @@ import (
 func TestUnknownFieldType(t *testing.T) {
 	typ := FieldType(len(fieldTypeNames))
 	require.Panics(t, func() {
-		typ.String()
+		_ = typ.String()
 	})
 }
 
 func TestUnknownCompressionType(t *testing.T) {
 	typ := CompressionType(len(compressionTypeNames))
 	require.Panics(t, func() {
-		typ.String()
+		_ = typ.String()
 	})
 }

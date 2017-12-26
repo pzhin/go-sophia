@@ -14,6 +14,7 @@ branches:
   only:
     - master
 script:
+  - go vet -v ./...
   - go test -v ./... -bench=. -benchmem
 after_success:
   - $HOME/gopath/bin/goveralls -service=travis-ci
