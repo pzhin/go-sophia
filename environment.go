@@ -56,7 +56,7 @@ func (env *Environment) NewDatabase(config DatabaseConfig) (*Database, error) {
 			return nil, env.Error()
 		}
 		registerUpsertArg(index, config.UpsertArg)
-		ok = env.Set(fmt.Sprintf(keyUpsertArgTemplate, config.Name), &index)
+		ok = env.Set(fmt.Sprintf(keyUpsertArgTemplate, config.Name), index)
 		if !ok {
 			unregisterUpsert(index)
 			return nil, env.Error()

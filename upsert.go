@@ -45,26 +45,27 @@ func goUpsertCall(count C.int,
 	upsert **C.char, upsert_size *C.uint32_t,
 	result **C.char, result_size *C.uint32_t,
 	arg unsafe.Pointer) {
-	index := *(*int)(arg)
+
+	index := (*int)(arg)
 	fn := getUpsert(index)
 	upsertArg := getUpsertArg(index)
 	fn(count, src, src_size, upsert, upsert_size, result, result_size, upsertArg)
 }
 
-var upsertMap = make(map[int]upsertFunc)
+var upsertMap = make(map[*int]upsertFunc)
 var upsertMu sync.RWMutex
 var upsertIndex int
 
-var upsertArgMap = make(map[int]unsafe.Pointer)
+var upsertArgMap = make(map[*int]unsafe.Pointer)
 var upsertArgMu sync.RWMutex
 
-func getUpsertArg(index int) unsafe.Pointer {
+func getUpsertArg(index *int) unsafe.Pointer {
 	upsertArgMu.RLock()
 	defer upsertArgMu.RUnlock()
 	return upsertArgMap[index]
 }
 
-func registerUpsertArg(index int, arg interface{}) {
+func registerUpsertArg(index *int, arg interface{}) {
 	upsertArgMu.Lock()
 	defer upsertArgMu.Unlock()
 	if arg == nil {
@@ -89,16 +90,20 @@ func registerUpsertArg(index int, arg interface{}) {
 	}
 }
 
-func registerUpsert(upsertFunc UpsertFunc) (unsafe.Pointer, int) {
+func registerUpsert(upsertFunc UpsertFunc) (unsafe.Pointer, *int) {
 	upsertMu.Lock()
 	defer upsertMu.Unlock()
+
 	index := upsertIndex
 	upsertIndex++
-	upsertMap[index] = func(count C.int,
+	indexPtr := &index
+
+	upsertMap[indexPtr] = func(count C.int,
 		src **C.char, srcSize *C.uint32_t,
 		upsert **C.char, upsertSize *C.uint32_t,
 		result **C.char, resultSize *C.uint32_t,
 		arg unsafe.Pointer) C.int {
+
 		if src == nil {
 			return C.int(0)
 		}
@@ -125,16 +130,16 @@ func registerUpsert(upsertFunc UpsertFunc) (unsafe.Pointer, int) {
 		return C.int(res)
 	}
 	ptr := C.goUpsertCall
-	return ptr, index
+	return ptr, indexPtr
 }
 
-func getUpsert(index int) upsertFunc {
+func getUpsert(index *int) upsertFunc {
 	upsertMu.RLock()
 	defer upsertMu.RUnlock()
 	return upsertMap[index]
 }
 
-func unregisterUpsert(index int) {
+func unregisterUpsert(index *int) {
 	upsertMu.Lock()
 	defer upsertMu.Unlock()
 	delete(upsertMap, index)
