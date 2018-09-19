@@ -549,8 +549,6 @@ func TestDatabaseDeleteNotExistingKey(t *testing.T) {
 	require.Nil(t, db.Delete(doc))
 }
 
-// ATTN - This benchmark don't show real performance
-// It is just a long running tests
 func BenchmarkDatabaseSet(b *testing.B) {
 	const (
 		keyPath           = "key"
@@ -592,19 +590,18 @@ func BenchmarkDatabaseSet(b *testing.B) {
 			value: fmt.Sprintf(ValueTemplate, i),
 		})
 	}
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		index := i % RecordsCountBench
 		doc := db.Document()
-		require.True(b, doc.Set(keyPath, pairs[index].key))
-		require.True(b, doc.Set(valuePath, pairs[index].value))
-		require.Nil(b, db.Set(doc))
+		doc.Set(keyPath, pairs[index].key)
+		doc.Set(valuePath, pairs[index].value)
+		db.Set(doc)
 		doc.Free()
 	}
 }
 
-// ATTN - This benchmark don't show real performance
-// It is just a long running tests
 func BenchmarkDatabaseGet(b *testing.B) {
 	const (
 		keyPath           = "key"
@@ -655,16 +652,13 @@ func BenchmarkDatabaseGet(b *testing.B) {
 		doc.Free()
 	}
 
-	var size int
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		index := i % RecordsCountBench
 		doc := db.Document()
 		require.True(b, doc.Set(keyPath, pairs[index].key))
-		d, err := db.Get(doc)
+		d, _ := db.Get(doc)
 		doc.Free()
-		require.Nil(b, err)
-		require.Equal(b, pairs[index].value, d.GetString(valuePath, &size))
 		d.Destroy()
 	}
 }
