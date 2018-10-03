@@ -16,20 +16,20 @@ type dataStore struct {
 }
 
 // Get retrieves the row for the set of keys.
-func (d *dataStore) Get(doc *Document) (*Document, error) {
+func (d *dataStore) Get(doc Document) (Document, error) {
 	ptr := spGet(d.ptr, doc.ptr)
 	if ptr == nil {
 		err := d.env.Error()
 		if err == nil {
-			return nil, ErrNotFound
+			return Document{}, ErrNotFound
 		}
-		return nil, fmt.Errorf("failed Get document: err=%v", err)
+		return Document{}, fmt.Errorf("failed Get document: err=%v", err)
 	}
 	return newDocument(ptr, 0), nil
 }
 
 // Set sets the row of the set of keys.
-func (d *dataStore) Set(doc *Document) error {
+func (d *dataStore) Set(doc Document) error {
 	if !spSet(d.ptr, doc.ptr) {
 		return fmt.Errorf("failed Set document: err=%v", d.env.Error())
 	}
@@ -37,7 +37,7 @@ func (d *dataStore) Set(doc *Document) error {
 }
 
 // Upsert sets the row of the set of keys.
-func (d *dataStore) Upsert(doc *Document) error {
+func (d *dataStore) Upsert(doc Document) error {
 	if !spUpsert(d.ptr, doc.ptr) {
 		return fmt.Errorf("failed Upsert document: err=%v", d.env.Error())
 	}
@@ -45,7 +45,7 @@ func (d *dataStore) Upsert(doc *Document) error {
 }
 
 // Delete deletes row with specified set of keys.
-func (d *dataStore) Delete(doc *Document) error {
+func (d *dataStore) Delete(doc Document) error {
 	if !spDelete(d.ptr, doc.ptr) {
 		return fmt.Errorf("failed Delete document: err=%v", d.env.Error())
 	}

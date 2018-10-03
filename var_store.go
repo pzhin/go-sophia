@@ -17,11 +17,16 @@ type varStore struct {
 	pointers []unsafe.Pointer
 }
 
-func newVarStore(ptr unsafe.Pointer, size int) *varStore {
-	return &varStore{
-		ptr:      ptr,
-		pointers: make([]unsafe.Pointer, 0, size),
+func newVarStore(ptr unsafe.Pointer, size int) varStore {
+	ret := varStore{ptr: ptr}
+	if size > 0 {
+		ret.pointers = make([]unsafe.Pointer, 0, size)
 	}
+	return ret
+}
+
+func (s *varStore) IsEmpty() bool {
+	return s.ptr == nil
 }
 
 // TODO :: implement custom types

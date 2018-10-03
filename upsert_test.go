@@ -171,7 +171,7 @@ func TestDatabaseUpsertError(t *testing.T) {
 	require.Nil(t, env.Open())
 	defer env.Close()
 	doc := db.Document()
-	require.NotNil(t, doc)
+	require.False(t, doc.IsEmpty())
 	require.True(t, doc.Set("key", 1))
 	require.True(t, doc.Set("id", 1))
 	require.NotNil(t, db.Upsert(doc))

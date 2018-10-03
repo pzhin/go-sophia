@@ -14,7 +14,7 @@ var ErrEnvironmentClosed = errors.New("usage of closed environment")
 // Take it's name from sophia
 // Usually object with same features are called 'database'
 type Environment struct {
-	*varStore
+	varStore
 }
 
 // NewEnvironment creates a new environment for opening a database.
