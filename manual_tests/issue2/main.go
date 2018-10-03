@@ -79,7 +79,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	for d := cursor.Next(); d != nil; d = cursor.Next() {
+	for d := cursor.Next(); !d.IsEmpty(); d = cursor.Next() {
 		var size int
 		fmt.Println(d.GetString("key", &size), ":", d.GetInt("value"), ":", d.GetInt("value2"), ":", size)
 	}

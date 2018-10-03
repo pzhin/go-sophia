@@ -84,13 +84,13 @@ func TestTxGet(t *testing.T) {
 	require.Nil(t, err)
 
 	doc = db.Document()
-	require.NotNil(t, doc)
+	require.False(t, doc.IsEmpty())
 	require.True(t, doc.Set(keyPath, expectedKey))
 
 	d, err := tx.Get(doc)
 	doc.Free()
 
-	require.NotNil(t, d)
+	require.False(t, d.IsEmpty())
 	require.Nil(t, err)
 
 	var size int
@@ -135,12 +135,12 @@ func TestTxDelete(t *testing.T) {
 	doc.Free()
 
 	doc = db.Document()
-	require.NotNil(t, doc)
+	require.False(t, doc.IsEmpty())
 	require.True(t, doc.Set(keyPath, expectedKey))
 
 	d, err := db.Get(doc)
 	doc.Free()
-	require.NotNil(t, d)
+	require.False(t, d.IsEmpty())
 	require.Nil(t, err)
 
 	var size int
@@ -152,17 +152,17 @@ func TestTxDelete(t *testing.T) {
 	require.Nil(t, err)
 
 	doc = db.Document()
-	require.NotNil(t, doc)
+	require.False(t, doc.IsEmpty())
 	require.True(t, doc.Set(keyPath, expectedKey))
 	require.Nil(t, tx.Delete(doc))
 	doc.Free()
 
 	doc = db.Document()
-	require.NotNil(t, doc)
+	require.False(t, doc.IsEmpty())
 	require.True(t, doc.Set(keyPath, expectedKey))
 	d, err = tx.Get(doc)
 	doc.Free()
-	require.Nil(t, d)
+	require.True(t, d.IsEmpty())
 	require.NotNil(t, err)
 
 	require.Equal(t, TxOk, tx.Commit())
@@ -209,7 +209,7 @@ func TestTxRollback(t *testing.T) {
 	require.True(t, doc.Set(keyPath, expectedKey))
 
 	d, err := db.Get(doc)
-	require.Nil(t, d)
+	require.True(t, d.IsEmpty())
 	require.Equal(t, ErrNotFound, err)
 	doc.Free()
 }
@@ -278,7 +278,7 @@ func TestConcurrentTx(t *testing.T) {
 	d, err := db.Get(doc)
 	doc.Free()
 	require.Nil(t, err)
-	require.NotNil(t, d)
+	require.False(t, d.IsEmpty())
 	value := d.GetString(valuePath, &size)
 	require.Equal(t, expectedValue1, value)
 	d.Destroy()

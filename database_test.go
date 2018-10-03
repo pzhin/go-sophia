@@ -36,7 +36,7 @@ func TestDatabaseDocument(t *testing.T) {
 	defer env.Close()
 
 	doc := db.Document()
-	require.NotNil(t, doc)
+	require.False(t, doc.IsEmpty())
 	require.Nil(t, env.Error())
 }
 
@@ -64,7 +64,7 @@ func TestDatabaseSetInClosedEnvironment(t *testing.T) {
 	require.NotNil(t, db)
 
 	doc := db.Document()
-	require.NotNil(t, doc)
+	require.False(t, doc.IsEmpty())
 	require.Nil(t, env.Error())
 	defer doc.Free()
 
@@ -101,7 +101,7 @@ func TestDatabaseSet(t *testing.T) {
 	defer env.Close()
 
 	doc := db.Document()
-	require.NotNil(t, doc)
+	require.False(t, doc.IsEmpty())
 	require.Nil(t, env.Error())
 	defer doc.Free()
 
@@ -131,7 +131,7 @@ func TestDatabaseGetFromClosedEnvironment(t *testing.T) {
 	require.NotNil(t, db)
 
 	doc := db.Document()
-	require.NotNil(t, doc)
+	require.False(t, doc.IsEmpty())
 	require.Nil(t, env.Error())
 	defer doc.Free()
 
@@ -139,7 +139,7 @@ func TestDatabaseGetFromClosedEnvironment(t *testing.T) {
 
 	d, err := db.Get(doc)
 	require.NotNil(t, err)
-	require.Nil(t, d)
+	require.True(t, d.IsEmpty())
 }
 
 func TestDatabaseGet(t *testing.T) {
@@ -169,7 +169,7 @@ func TestDatabaseGet(t *testing.T) {
 	defer env.Close()
 
 	doc := db.Document()
-	require.NotNil(t, doc)
+	require.False(t, doc.IsEmpty())
 	require.Nil(t, env.Error())
 
 	require.True(t, doc.SetString(keyPath, expectedKey))
@@ -179,7 +179,7 @@ func TestDatabaseGet(t *testing.T) {
 	doc.Free()
 
 	doc = db.Document()
-	require.NotNil(t, doc)
+	require.False(t, doc.IsEmpty())
 	require.Nil(t, env.Error())
 	defer doc.Free()
 
@@ -187,7 +187,7 @@ func TestDatabaseGet(t *testing.T) {
 
 	d, err := db.Get(doc)
 	require.Nil(t, err)
-	require.NotNil(t, d)
+	require.False(t, d.IsEmpty())
 	d.Destroy()
 }
 
@@ -211,7 +211,7 @@ func TestDatabaseDeleteFromClosedEnvironment(t *testing.T) {
 	require.NotNil(t, db)
 
 	doc := db.Document()
-	require.NotNil(t, doc)
+	require.False(t, doc.IsEmpty())
 	require.Nil(t, env.Error())
 	defer doc.Free()
 
@@ -247,7 +247,7 @@ func TestDatabaseDelete(t *testing.T) {
 	defer env.Close()
 
 	doc := db.Document()
-	require.NotNil(t, doc)
+	require.False(t, doc.IsEmpty())
 	require.Nil(t, env.Error())
 
 	require.True(t, doc.SetString(keyPath, expectedKey))
@@ -257,7 +257,7 @@ func TestDatabaseDelete(t *testing.T) {
 	doc.Free()
 
 	doc = db.Document()
-	require.NotNil(t, doc)
+	require.False(t, doc.IsEmpty())
 	require.Nil(t, env.Error())
 
 	require.True(t, doc.SetString(keyPath, expectedKey))
@@ -266,7 +266,7 @@ func TestDatabaseDelete(t *testing.T) {
 	doc.Free()
 
 	doc = db.Document()
-	require.NotNil(t, doc)
+	require.False(t, doc.IsEmpty())
 	require.Nil(t, env.Error())
 	defer doc.Free()
 
@@ -275,7 +275,7 @@ func TestDatabaseDelete(t *testing.T) {
 	d, err := db.Get(doc)
 	require.NotNil(t, err)
 	require.Equal(t, ErrNotFound, err)
-	require.Nil(t, d)
+	require.True(t, d.IsEmpty())
 }
 
 func TestDatabaseWithCustomSchema(t *testing.T) {
@@ -309,7 +309,7 @@ func TestDatabaseWithCustomSchema(t *testing.T) {
 	const expectedValue int64 = 73
 
 	doc := db.Document()
-	require.NotNil(t, doc)
+	require.False(t, doc.IsEmpty())
 	require.True(t, doc.Set(keyPath, expectedKey))
 	require.True(t, doc.Set(valuePath, expectedValue))
 
@@ -318,21 +318,20 @@ func TestDatabaseWithCustomSchema(t *testing.T) {
 	require.Nil(t, err)
 
 	doc = db.Document()
-	require.NotNil(t, doc)
+	require.False(t, doc.IsEmpty())
 	require.True(t, doc.Set(keyPath, expectedKey))
 
 	d, err := db.Get(doc)
 	doc.Free()
 	require.Nil(t, err)
-	require.NotNil(t, d)
-
-	defer d.Destroy()
+	require.False(t, d.IsEmpty())
 
 	require.Equal(t, expectedKey, d.GetInt(keyPath))
 	require.Equal(t, expectedValue, d.GetInt(valuePath))
+	d.Destroy()
 
 	doc = db.Document()
-	require.NotNil(t, doc)
+	require.False(t, doc.IsEmpty())
 	require.Nil(t, env.Error())
 
 	require.True(t, doc.Set(keyPath, expectedKey))
@@ -341,7 +340,7 @@ func TestDatabaseWithCustomSchema(t *testing.T) {
 	doc.Free()
 
 	doc = db.Document()
-	require.NotNil(t, doc)
+	require.False(t, doc.IsEmpty())
 	require.Nil(t, env.Error())
 	defer doc.Free()
 
@@ -350,7 +349,7 @@ func TestDatabaseWithCustomSchema(t *testing.T) {
 	d, err = db.Get(doc)
 	require.NotNil(t, err)
 	require.Equal(t, ErrNotFound, err)
-	require.Nil(t, d)
+	require.True(t, d.IsEmpty())
 }
 
 func TestDatabaseWithMultipleKeys(t *testing.T) {
@@ -394,7 +393,7 @@ func TestDatabaseWithMultipleKeys(t *testing.T) {
 	)
 
 	doc := db.Document()
-	require.NotNil(t, doc)
+	require.False(t, doc.IsEmpty())
 	require.True(t, doc.Set(key1Path, expectedKey1))
 	require.True(t, doc.Set(key2Path, expectedKey2))
 	require.True(t, doc.Set(key3Path, expectedKey3))
@@ -405,7 +404,7 @@ func TestDatabaseWithMultipleKeys(t *testing.T) {
 	require.Nil(t, err)
 
 	doc = db.Document()
-	require.NotNil(t, doc)
+	require.False(t, doc.IsEmpty())
 	require.True(t, doc.Set(key1Path, expectedKey1))
 	require.True(t, doc.Set(key2Path, expectedKey2))
 	require.True(t, doc.Set(key3Path, expectedKey3))
@@ -413,17 +412,16 @@ func TestDatabaseWithMultipleKeys(t *testing.T) {
 	d, err := db.Get(doc)
 	doc.Free()
 	require.Nil(t, err)
-	require.NotNil(t, d)
-
-	defer d.Destroy()
+	require.False(t, d.IsEmpty())
 
 	require.Equal(t, expectedKey1, d.GetInt(key1Path))
 	require.Equal(t, expectedKey2, d.GetInt(key2Path))
 	require.Equal(t, expectedKey3, d.GetInt(key3Path))
 	require.Equal(t, expectedValue, d.GetInt(valuePath))
+	d.Destroy()
 
 	doc = db.Document()
-	require.NotNil(t, doc)
+	require.False(t, doc.IsEmpty())
 	require.Nil(t, env.Error())
 
 	require.True(t, doc.Set(key1Path, expectedKey1))
@@ -434,7 +432,7 @@ func TestDatabaseWithMultipleKeys(t *testing.T) {
 	doc.Free()
 
 	doc = db.Document()
-	require.NotNil(t, doc)
+	require.False(t, doc.IsEmpty())
 	require.Nil(t, env.Error())
 	defer doc.Free()
 
@@ -445,7 +443,7 @@ func TestDatabaseWithMultipleKeys(t *testing.T) {
 	d, err = db.Get(doc)
 	require.NotNil(t, err)
 	require.Equal(t, ErrNotFound, err)
-	require.Nil(t, d)
+	require.True(t, d.IsEmpty())
 }
 
 func TestDatabaseUseSomeDocumentsAtTheSameTime(t *testing.T) {
@@ -495,12 +493,12 @@ func TestDatabaseUseSomeDocumentsAtTheSameTime(t *testing.T) {
 	doc2.Free()
 
 	doc := db.Document()
-	require.NotNil(t, doc)
+	require.False(t, doc.IsEmpty())
 
 	doc.Set(keyPath, expectedKey1)
 	d, err := db.Get(doc)
 	doc.Free()
-	require.NotNil(t, d)
+	require.False(t, d.IsEmpty())
 	require.Nil(t, err)
 	size := 0
 	require.Equal(t, expectedValue1, d.GetString(valuePath, &size))
@@ -508,12 +506,12 @@ func TestDatabaseUseSomeDocumentsAtTheSameTime(t *testing.T) {
 	d.Destroy()
 
 	doc = db.Document()
-	require.NotNil(t, doc)
+	require.False(t, doc.IsEmpty())
 
 	doc.Set(keyPath, expectedKey2)
 	d, err = db.Get(doc)
 	doc.Free()
-	require.NotNil(t, d)
+	require.False(t, d.IsEmpty())
 	require.Nil(t, err)
 	size = 0
 	require.Equal(t, expectedValue2, d.GetString(valuePath, &size))

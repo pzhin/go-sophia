@@ -59,7 +59,7 @@ func TestCursor(t *testing.T) {
 
 func testCursorError(t *testing.T, db *Database) {
 	doc := db.Document()
-	require.NotNil(t, doc)
+	require.False(t, doc.IsEmpty())
 
 	cursor, err := db.Cursor(doc)
 	require.Nil(t, err)
@@ -69,13 +69,14 @@ func testCursorError(t *testing.T, db *Database) {
 	require.Nil(t, err)
 
 	require.Error(t, cursor.Close())
-	require.Nil(t, cursor.Next())
+	d := cursor.Next()
+	require.True(t, d.IsEmpty())
 }
 
 func testCursor(t *testing.T, db *Database, start, count int64, valueTemplate string) {
 	id := start
 	doc := db.Document()
-	require.NotNil(t, doc)
+	require.False(t, doc.IsEmpty())
 	if start != 0 {
 		doc.SetInt("key", start)
 	}
@@ -91,7 +92,7 @@ func testCursor(t *testing.T, db *Database, start, count int64, valueTemplate st
 		size    int
 		counter int64
 	)
-	for d := cursor.Next(); d != nil; d = cursor.Next() {
+	for d := cursor.Next(); !d.IsEmpty(); d = cursor.Next() {
 		require.Equal(t, id, d.GetInt("key"))
 		require.Equal(t, fmt.Sprintf(valueTemplate, id), d.GetString("value", &size))
 		counter++
@@ -102,7 +103,7 @@ func testCursor(t *testing.T, db *Database, start, count int64, valueTemplate st
 
 func testReverseCursor(t *testing.T, db *Database, count int64, valueTemplate string) {
 	doc := db.Document()
-	require.NotNil(t, doc)
+	require.False(t, doc.IsEmpty())
 
 	doc.Set(CursorOrder, LTE)
 
@@ -117,7 +118,7 @@ func testReverseCursor(t *testing.T, db *Database, count int64, valueTemplate st
 		size int
 		id   int64 = count - 1
 	)
-	for d := cursor.Next(); d != nil; d = cursor.Next() {
+	for d := cursor.Next(); !d.IsEmpty(); d = cursor.Next() {
 		require.Equal(t, id, d.GetInt("key"))
 		require.Equal(t, fmt.Sprintf(valueTemplate, id), d.GetString("value", &size))
 		id--
@@ -185,7 +186,7 @@ func TestCursorPrefix(t *testing.T) {
 	prefixStr = prefixStr[:len(prefixStr)-1]
 
 	doc := db.Document()
-	require.NotNil(t, doc)
+	require.False(t, doc.IsEmpty())
 
 	doc.Set(CursorPrefix, prefixStr)
 
@@ -203,12 +204,12 @@ func TestCursorPrefix(t *testing.T) {
 
 	// get row that match prefix
 	d := cursor.Next()
-	require.NotNil(t, d)
+	require.False(t, d.IsEmpty())
 	require.Equal(t, prefixStr, d.GetString(keyPath, &size))
 	require.Equal(t, fmt.Sprintf(valueTemplate, prefix/base), d.GetString(valuePath, &size))
 
 	// get rows that have additional symbol at the end
-	for d := cursor.Next(); d != nil; d = cursor.Next() {
+	for d := cursor.Next(); !d.IsEmpty(); d = cursor.Next() {
 		id := prefix + count
 		require.Equal(t, strconv.FormatInt(int64(id), base), d.GetString(keyPath, &size))
 		require.Equal(t, fmt.Sprintf(valueTemplate, id), d.GetString(valuePath, &size))

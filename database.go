@@ -86,17 +86,17 @@ type Database struct {
 }
 
 // Document creates a Document for a single or multi-statement transactions
-func (db *Database) Document() *Document {
+func (db *Database) Document() Document {
 	ptr := spDocument(db.ptr)
 	if ptr == nil {
-		return nil
+		return Document{}
 	}
 	return newDocument(ptr, db.fieldsCount)
 }
 
 // Cursor returns a Cursor for iterating over rows in the database
-func (db *Database) Cursor(doc *Document) (*Cursor, error) {
-	if nil == doc {
+func (db *Database) Cursor(doc Document) (*Cursor, error) {
+	if doc.IsEmpty() {
 		return nil, errors.New("failed to create cursor: nil Document")
 	}
 	cPtr := spCursor(db.env.ptr)

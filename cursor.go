@@ -34,7 +34,7 @@ var ErrCursorClosed = errors.New("usage of closed Cursor")
 // Cursor iterates over key-values in a database.
 type Cursor struct {
 	ptr    unsafe.Pointer
-	doc    *Document
+	doc    Document
 	closed bool
 }
 
@@ -55,13 +55,13 @@ func (cur *Cursor) Close() error {
 
 // Next fetches the next row for the cursor
 // Returns next row if it exists else it will return nil
-func (cur *Cursor) Next() *Document {
+func (cur *Cursor) Next() Document {
 	if cur.closed {
-		return nil
+		return Document{}
 	}
 	ptr := spGet(cur.ptr, cur.doc.ptr)
 	if ptr == nil {
-		return nil
+		return Document{}
 	}
 	cur.doc.ptr = ptr
 	return cur.doc

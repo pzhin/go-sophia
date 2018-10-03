@@ -8,11 +8,11 @@ import (
 // Document is a representation of a row in a database.
 // Destroy should be called after Document usage.
 type Document struct {
-	*varStore
+	varStore
 }
 
-func newDocument(ptr unsafe.Pointer, size int) *Document {
-	return &Document{
+func newDocument(ptr unsafe.Pointer, size int) Document {
+	return Document{
 		varStore: newVarStore(ptr, size),
 	}
 }
