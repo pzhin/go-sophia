@@ -109,15 +109,15 @@ func registerUpsert(upsertFunc UpsertFunc) (unsafe.Pointer, *int) {
 		}
 		countN := int(count)
 
-		sSize := (*[1 << 4]uint32)(unsafe.Pointer(src))[:countN:countN]
-		uSizes := (*[1 << 4]uint32)(unsafe.Pointer(upsert))[:countN:countN]
-		rSizes := (*[1 << 4]uint32)(unsafe.Pointer(result))[:countN:countN]
+		sSize := (*[16]uint32)(unsafe.Pointer(src))[:countN]
+		uSizes := (*[16]uint32)(unsafe.Pointer(upsert))[:countN]
+		rSizes := (*[16]uint32)(unsafe.Pointer(result))[:countN]
 
 		// We receive C pointer to pointer which can be interpreted as an array of pointers.
 		// Here we cast C pointer to pointer to Go slice of pointers.
-		slice1 := (*[1 << 4]unsafe.Pointer)(unsafe.Pointer(src))[:countN:countN]
-		slice2 := (*[1 << 4]unsafe.Pointer)(unsafe.Pointer(upsert))[:countN:countN]
-		slice3 := (*[1 << 4]unsafe.Pointer)(unsafe.Pointer(result))[:countN:countN]
+		slice1 := (*[16]unsafe.Pointer)(unsafe.Pointer(src))[:countN]
+		slice2 := (*[16]unsafe.Pointer)(unsafe.Pointer(upsert))[:countN]
+		slice3 := (*[16]unsafe.Pointer)(unsafe.Pointer(result))[:countN]
 
 		res := upsertFunc(countN,
 			slice1, sSize,
