@@ -122,6 +122,10 @@ func upsertCallback(count int,
 	upsert []unsafe.Pointer, upsertSize []uint32,
 	result []unsafe.Pointer, resultSize []uint32,
 	arg unsafe.Pointer) int {
+
+	if src == nil {
+		return 0
+	}
 	var a uint32 = *(*uint32)(src[1])
 	var b uint32 = *(*uint32)(upsert[1])
 	ret := a + b
@@ -135,6 +139,10 @@ func upsertCallbackWithArg(count int,
 	upsert []unsafe.Pointer, upsertSize []uint32,
 	result []unsafe.Pointer, resultSize []uint32,
 	arg unsafe.Pointer) int {
+
+	if src == nil {
+		return 0
+	}
 	var a uint32 = *(*uint32)(src[1])
 	var b uint32 = *(*uint32)(upsert[1])
 	var c uint32 = *(*uint32)(arg)
