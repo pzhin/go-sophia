@@ -10,9 +10,9 @@ import (
 	"github.com/pzhin/go-sophia"
 )
 
-func upsertCallback(count int, src []unsafe.Pointer, srcSize uint32,
-	upsert []unsafe.Pointer, upsertSize uint32, result []unsafe.Pointer,
-	resultSize uint32, arg unsafe.Pointer) int {
+func upsertCallback(count int, src []unsafe.Pointer, srcSize []uint32,
+	upsert []unsafe.Pointer, upsertSize []uint32, result []unsafe.Pointer,
+	resultSize []uint32, arg unsafe.Pointer) int {
 	ca := *(*uint32)(src[1])
 	cb := *(*uint32)(upsert[1])
 	cret := ca + cb

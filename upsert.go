@@ -34,9 +34,9 @@ type upsertFunc func(count C.int,
 // UpsertFunc golang equivalent of upsert_callback.
 // Should return 0 in case of success, otherwise -1.
 type UpsertFunc func(count int,
-	src []unsafe.Pointer, srcSize uint32,
-	upsert []unsafe.Pointer, upsertSize uint32,
-	result []unsafe.Pointer, resultSize uint32,
+	src []unsafe.Pointer, srcSize []uint32,
+	upsert []unsafe.Pointer, upsertSize []uint32,
+	result []unsafe.Pointer, resultSize []uint32,
 	arg unsafe.Pointer) int
 
 //export goUpsertCall
@@ -107,13 +107,11 @@ func registerUpsert(upsertFunc UpsertFunc) (unsafe.Pointer, *int) {
 		if src == nil {
 			return C.int(0)
 		}
-		var sSize uint32
-		if srcSize != nil {
-			sSize = uint32(*srcSize)
-		}
-		uSize := uint32(*upsertSize)
-		rSize := uint32(*resultSize)
 		countN := int(count)
+
+		sSize := (*[1 << 4]uint32)(unsafe.Pointer(src))[:countN:countN]
+		uSizes := (*[1 << 4]uint32)(unsafe.Pointer(upsert))[:countN:countN]
+		rSizes := (*[1 << 4]uint32)(unsafe.Pointer(result))[:countN:countN]
 
 		// We receive C pointer to pointer which can be interpreted as an array of pointers.
 		// Here we cast C pointer to pointer to Go slice of pointers.
@@ -123,8 +121,8 @@ func registerUpsert(upsertFunc UpsertFunc) (unsafe.Pointer, *int) {
 
 		res := upsertFunc(countN,
 			slice1, sSize,
-			slice2, uSize,
-			slice3, rSize,
+			slice2, uSizes,
+			slice3, rSizes,
 			arg)
 
 		return C.int(res)
