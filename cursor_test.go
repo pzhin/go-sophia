@@ -52,7 +52,7 @@ func TestCursor(t *testing.T) {
 	}
 	t.Run("All records", func(t *testing.T) { testCursor(t, db, 0, recordsCount, valueTemplate) })
 	t.Run("Half records", func(t *testing.T) { testCursor(t, db, recordsCount/2, recordsCount, valueTemplate) })
-	t.Run("Quater records", func(t *testing.T) { testCursor(t, db, recordsCount/4, recordsCount, valueTemplate) })
+	t.Run("Quarter records", func(t *testing.T) { testCursor(t, db, recordsCount/4, recordsCount, valueTemplate) })
 	t.Run("Use closed cursor error", func(t *testing.T) { testCursorError(t, db) })
 	t.Run("Reverse iterator", func(t *testing.T) { testReverseCursor(t, db, recordsCount, valueTemplate) })
 }
