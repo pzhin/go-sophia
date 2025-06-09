@@ -26,7 +26,7 @@ func (s *Schema) AddKey(name string, typ FieldType) error {
 	return nil
 }
 
-// AddKey adds new value field for record.
+// AddValue adds new value field for record.
 // If record have already had field with such name error will be returned
 func (s *Schema) AddValue(name string, typ FieldType) error {
 	if s.values == nil {
