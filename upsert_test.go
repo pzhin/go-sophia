@@ -279,6 +279,6 @@ func TestDatabaseUpsertArguments(t *testing.T) {
 		require.NotNil(t, result)
 
 		require.EqualValues(t, expected.key, result.GetInt(keyPath))
-		require.EqualValues(t, expected.key, result.GetInt(keyPath))
+		require.EqualValues(t, expected.value, result.GetInt(valuePath))
 	}
 }
