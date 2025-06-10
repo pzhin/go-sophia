@@ -10,3 +10,25 @@ The [sophia](http://sophia.systems/) sources are bundled with the go-sophia, so 
 
 #Library information
 Used Sophia v2.2 (commit 1419633)
+
+#Memory management
+go-sophia caches C strings for internal configuration paths. Each Environment,
+Database and Transaction holds a `CStringCache` instance used to manage these
+strings. A reference-counted implementation is used by default, but users may
+provide their own by implementing:
+
+```
+type CStringCache interface {
+    Acquire(string) *C.char
+    Release(string)
+    Clear()
+}
+```
+
+Custom caches can be passed with `NewEnvironmentWithCache` and via
+`DatabaseConfig.Cache`. Transactions use the cache of the `Environment` they
+were created from. All cached strings should be cleared by calling `Clear()`
+when the owning object is closed.
+If no cache is provided, an unlimited `SizedCache` is used. This cache keeps all
+paths in memory until `Clear` is called, so applications should clear it when
+the environment or database is closed.

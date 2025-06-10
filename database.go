@@ -73,6 +73,9 @@ type DatabaseConfig struct {
 	Upsert UpsertFunc
 	// UpsertArg an argument which is additionally passed every call
 	UpsertArg interface{}
+	// Cache optional cache implementation for this database.
+	// If nil, an unlimited SizedCache is used.
+	Cache CStringCache
 }
 
 // Database is used for accessing a database.
@@ -91,7 +94,7 @@ func (db *Database) Document() Document {
 	if ptr == nil {
 		return Document{}
 	}
-	return newDocument(ptr, db.fieldsCount)
+	return newDocument(ptr, db.fieldsCount, db.cache)
 }
 
 // Cursor returns a Cursor for iterating over rows in the database
