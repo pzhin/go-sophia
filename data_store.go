@@ -11,8 +11,9 @@ var ErrNotFound = errors.New("document not found")
 
 // DataStore provides access to data
 type dataStore struct {
-	ptr unsafe.Pointer
-	env *Environment
+	ptr   unsafe.Pointer
+	env   *Environment
+	cache CStringCache
 }
 
 // Get retrieves the row for the set of keys.
@@ -25,7 +26,7 @@ func (d *dataStore) Get(doc Document) (Document, error) {
 		}
 		return Document{}, fmt.Errorf("failed Get document: err=%v", err)
 	}
-	return newDocument(ptr, 0), nil
+	return newDocument(ptr, 0, d.cache), nil
 }
 
 // Set sets the row of the set of keys.
@@ -52,9 +53,10 @@ func (d *dataStore) Delete(doc Document) error {
 	return nil
 }
 
-func newDataStore(ptr unsafe.Pointer, env *Environment) *dataStore {
+func newDataStore(ptr unsafe.Pointer, env *Environment, cache CStringCache) *dataStore {
 	return &dataStore{
-		ptr: ptr,
-		env: env,
+		ptr:   ptr,
+		env:   env,
+		cache: cache,
 	}
 }

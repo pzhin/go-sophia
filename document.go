@@ -11,9 +11,9 @@ type Document struct {
 	varStore
 }
 
-func newDocument(ptr unsafe.Pointer, size int) Document {
+func newDocument(ptr unsafe.Pointer, size int, cache CStringCache) Document {
 	return Document{
-		varStore: newVarStore(ptr, size),
+		varStore: newVarStore(ptr, size, cache),
 	}
 }
 

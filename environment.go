@@ -20,11 +20,20 @@ type Environment struct {
 // NewEnvironment creates a new environment for opening a database.
 // Receivers must call Close() on the returned Environment.
 func NewEnvironment() (*Environment, error) {
+	return NewEnvironmentWithCache(nil)
+}
+
+// NewEnvironmentWithCache creates a new environment using a custom cache.
+// If cache is nil an unlimited SizedCache is used.
+func NewEnvironmentWithCache(cache CStringCache) (*Environment, error) {
 	ptr := spEnv()
 	if ptr == nil {
 		return nil, errors.New("sp_env failed")
 	}
-	return &Environment{varStore: newVarStore(ptr, 4)}, nil
+	if cache == nil {
+		cache = NewSizedCache(0)
+	}
+	return &Environment{varStore: newVarStore(ptr, 4, cache)}, nil
 }
 
 // NewDatabase creates new database in environment with given configuration.
@@ -75,8 +84,12 @@ func (env *Environment) NewDatabase(config DatabaseConfig) (*Database, error) {
 	if db == nil {
 		return nil, fmt.Errorf("failed to get database object: %v", env.Error())
 	}
+	dbCache := config.Cache
+	if dbCache == nil {
+		dbCache = NewSizedCache(0)
+	}
 	return &Database{
-		dataStore:   newDataStore(db, env),
+		dataStore:   newDataStore(db, env, dbCache),
 		name:        config.Name,
 		schema:      config.Schema,
 		fieldsCount: fieldsCount,
@@ -135,6 +148,9 @@ func (env *Environment) Close() error {
 		return fmt.Errorf("failed to close: %v", env.Error())
 	}
 	env.ptr = nil
+	if env.cache != nil {
+		env.cache.Clear()
+	}
 	return nil
 }
 
@@ -153,7 +169,9 @@ func (env *Environment) Error() error {
 		return ErrEnvironmentClosed
 	}
 	var size int
-	err := spGetString(env.ptr, getCStringFromCache(errorPath), &size)
+	cPath := env.cache.Acquire(errorPath)
+	err := spGetString(env.ptr, cPath, &size)
+	env.cache.Release(errorPath)
 	if err != nil {
 		str := goString(err)
 		free(err)
@@ -173,7 +191,7 @@ func (env *Environment) BeginTx() (*Transaction, error) {
 		return nil, fmt.Errorf("failed to begin transaction: %v", env.Error())
 	}
 	return &Transaction{
-		dataStore: newDataStore(ptr, env),
+		dataStore: newDataStore(ptr, env, env.cache),
 	}, nil
 }
 

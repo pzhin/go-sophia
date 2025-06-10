@@ -109,3 +109,28 @@ func TestEnvironmentCloseTwice(t *testing.T) {
 	require.Nil(t, env.Close())
 	require.NotNil(t, env.Close())
 }
+
+func TestCustomCacheUsage(t *testing.T) {
+	cache := NewStaticCache()
+	env, err := NewEnvironmentWithCache(cache)
+	require.Nil(t, err)
+	require.Equal(t, cache, env.cache)
+
+	db, err := env.NewDatabase(DatabaseConfig{Name: "test", Cache: cache})
+	require.Nil(t, err)
+	require.Equal(t, cache, db.cache)
+
+	tx, err := env.BeginTx()
+	require.Nil(t, err)
+	require.Equal(t, cache, tx.cache)
+}
+
+func TestDatabaseDefaultCache(t *testing.T) {
+	env, err := NewEnvironment()
+	require.Nil(t, err)
+	db, err := env.NewDatabase(DatabaseConfig{Name: "test"})
+	require.Nil(t, err)
+	sc, ok := db.cache.(*SizedCache)
+	require.True(t, ok)
+	require.Equal(t, 0, sc.maxSize)
+}

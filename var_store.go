@@ -15,10 +15,13 @@ type varStore struct {
 	// pointers slice of pointers to allocated C variables,
 	// that must be freed after store usage
 	pointers []unsafe.Pointer
+
+	// cache used to store path C strings
+	cache CStringCache
 }
 
-func newVarStore(ptr unsafe.Pointer, size int) varStore {
-	ret := varStore{ptr: ptr}
+func newVarStore(ptr unsafe.Pointer, size int, cache CStringCache) varStore {
+	ret := varStore{ptr: ptr, cache: cache}
 	if size > 0 {
 		ret.pointers = make([]unsafe.Pointer, 0, size)
 	}
@@ -42,25 +45,31 @@ func (s *varStore) Set(path string, val interface{}) bool {
 		return s.SetInt(path, int64(v.Uint()))
 	}
 
-	cPath := getCStringFromCache(path)
+	cPath := s.cache.Acquire(path)
+	defer s.cache.Release(path)
 
 	size := int(reflect.TypeOf(val).Size())
 	return spSetString(s.ptr, cPath, (unsafe.Pointer)(reflect.ValueOf(val).Pointer()), size)
 }
 
 func (s *varStore) SetString(path, val string) bool {
-	cPath := getCStringFromCache(path)
+	cPath := s.cache.Acquire(path)
+	defer s.cache.Release(path)
 	cVal := cString(val)
 	s.pointers = append(s.pointers, unsafe.Pointer(cVal))
 	return spSetString(s.ptr, cPath, unsafe.Pointer(cVal), len(val))
 }
 
 func (s *varStore) SetInt(path string, val int64) bool {
-	return spSetInt(s.ptr, getCStringFromCache(path), val)
+	cPath := s.cache.Acquire(path)
+	defer s.cache.Release(path)
+	return spSetInt(s.ptr, cPath, val)
 }
 
 func (s *varStore) Get(path string, size *int) unsafe.Pointer {
-	return spGetString(s.ptr, getCStringFromCache(path), size)
+	cPath := s.cache.Acquire(path)
+	defer s.cache.Release(path)
+	return spGetString(s.ptr, cPath, size)
 }
 
 // GetString returns string without extra allocations.
@@ -68,17 +77,23 @@ func (s *varStore) Get(path string, size *int) unsafe.Pointer {
 // C memory will be freed on Document Destroy() call.
 // So for long-term usage you should to make copy of string to avoid data corruption.
 func (s *varStore) GetString(path string, size *int) string {
-	ptr := spGetString(s.ptr, getCStringFromCache(path), size)
+	cPath := s.cache.Acquire(path)
+	defer s.cache.Release(path)
+	ptr := spGetString(s.ptr, cPath, size)
 	sh := reflect.StringHeader{Data: uintptr(ptr), Len: *size}
 	return *(*string)(unsafe.Pointer(&sh))
 }
 
 func (s *varStore) GetObject(path string) unsafe.Pointer {
-	return spGetObject(s.ptr, getCStringFromCache(path))
+	cPath := s.cache.Acquire(path)
+	defer s.cache.Release(path)
+	return spGetObject(s.ptr, cPath)
 }
 
 func (s *varStore) GetInt(path string) int64 {
-	return spGetInt(s.ptr, getCStringFromCache(path))
+	cPath := s.cache.Acquire(path)
+	defer s.cache.Release(path)
+	return spGetInt(s.ptr, cPath)
 }
 
 // Free frees allocated memory for all C variables, that were in this store
